@@ -5,26 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <script src="../dist/robotstxt.min.js"></script>
+    <script src="../src/robotstxt.js"></script>
 </head>
 
 <body>
     <script>
-        const robot = robotstxt("User-agent: *\n \
-Allow: /\n \
-Diallow: /secret-folder/\n \
-Crawl-Delay: 12\n \
-\n \
-User-agent: GoogleBot\n \
-Disallow: /\n \
-Crawl-Delay: 5\n \
-\n \
-Sitemap: https://www.vinica.sk/sitemap.xml");
+        const robot = robotstxt(`User-agent: *\nDisallow: /search?`);
 
-        console.log(robot.isAllowed('/secret-folder/', '*'));
-        console.log(robot.crawlDelay('*'));
-        console.log(robot.sitemaps);
-        console.log(robot.isAllowed('/secret-folder/', 'GoogleBot'));
+        console.log(robot.isAllowed("/search?q=test", "*"));
     </script>
 </body>
 

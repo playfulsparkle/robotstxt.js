@@ -17,30 +17,31 @@
             const new_content = [];
 
             for (const line of content.split("\n")) {
-                const trimmedLine = line.trim();
+                // Trim and remove comments
+                let processedLine = line.trim();
 
-                // Ignore comments and empty lines
-                if (!trimmedLine || trimmedLine.startsWith("#")) {
-                    continue;
+                // Remove inline comments (everything after #)
+                const commentIndex = processedLine.indexOf('#');
+
+                if (commentIndex !== -1) {
+                    processedLine = processedLine.substring(0, commentIndex).trim();
                 }
 
-                // Find the first colon, which separates the directive and value
-                const colonIndex = trimmedLine.indexOf(":");
+                // Skip empty lines after comment removal
+                if (!processedLine) continue;
 
-                // If no colon is found, skip the line
-                if (colonIndex === -1) {
-                    continue;
+                // Find directive-value separator
+                const colonIndex = processedLine.indexOf(':');
+
+                if (colonIndex === -1) continue;
+
+                // Extract directive and value
+                const directive = processedLine.slice(0, colonIndex).trim().toLowerCase();
+                const value = processedLine.slice(colonIndex + 1).trim();
+
+                if (directive && value) {
+                    new_content.push({ directive, value });
                 }
-
-
-                const directive = trimmedLine.slice(0, colonIndex).trim().toLowerCase();
-                const value = trimmedLine.slice(colonIndex + 1).trim(); // Everything after the colon is the value
-
-                if (!directive || !value) {
-                    continue;
-                }
-
-                new_content.push({ directive: directive, value: value });
             }
 
             let user_agent_list = [];
@@ -83,6 +84,10 @@
 
                     if (!isNaN(crawlDelay)) {
                         for (const agent of user_agent_list) {
+                            if (groups[agent].crawlDelay) {
+                                continue;
+                            }
+
                             groups[agent].crawlDelay = crawlDelay;
                         }
                     }
@@ -102,24 +107,53 @@
         }
 
         crawlDelay(userAgent = '*') {
-            const exactGroups = this.parsedData.groups.find(
+            const exact = this.parsedData.groups.find(
                 g => g.userAgent.toLowerCase() === userAgent.toLowerCase()
             );
 
-            return exactGroups?.crawlDelay || null;
+            const wildcard = this.parsedData.groups.find(
+                g => g.userAgent.toLowerCase() === "*"
+            );
+
+            return exact?.crawlDelay || wildcard?.crawlDelay || null;
         }
 
         isAllowed(url, userAgent = '*') {
             const rules = this.getApplicableRules(userAgent);
             const urlPath = this.normalizeUrlPath(url);
 
+            // Collect all matching rules
+            const matchingRules = [];
+
             for (const rule of rules) {
                 if (this.pathMatches(rule.path, urlPath)) {
-                    return rule.type === 'allow';
+                    matchingRules.push(rule);
                 }
             }
 
-            return true; // Default to allowed
+            if (matchingRules.length === 0) return true;
+
+            // Find the most specific rule (longest path)
+            let mostSpecific = matchingRules[0];
+
+            for (const rule of matchingRules) {
+                const currentLength = this.getRuleSpecificity(rule.path);
+                const currentSpecificity = this.getRuleSpecificity(mostSpecific.path);
+
+                if (currentLength > currentSpecificity) {
+                    mostSpecific = rule;
+                } else if (currentLength === currentSpecificity) {
+                    // Prefer allow if same length
+                    if (rule.type === 'allow') mostSpecific = rule;
+                }
+            }
+
+            return mostSpecific.type === 'allow';
+        }
+
+        getRuleSpecificity(path) {
+            // Remove wildcards and exact match markers
+            return path.replace(/[\*\$]/g, '').length;
         }
 
         isDisallowed(url, userAgent = '*') {
