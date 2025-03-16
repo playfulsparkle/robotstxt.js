@@ -14,6 +14,11 @@
         "type": "git",
         "url": "git+https://github.com/playfulsparkle/robotstxt.js.git"
     },
+    "keywords": [
+        "javascript",
+        "robotstxt",
+        "parser"
+    ],
     "license": "BSD-3-Clause",
     "readmeFilename": "README.md",
     "devDependencies": {
