@@ -1,0 +1,22 @@
+{
+    "name": "robotstxt",
+    "description": "A lightweight, Open Source robots.txt parser written in JavaScript",
+    "version": "1.0.0",
+    "main": [
+        "dist/robotstxt.min.js"
+    ],
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "javascript",
+        "robotstxt"
+    ],
+    "authors": [
+        "Zsolt Oroszlány <zsolt.oroszlany@playfulsparkle.com> (https://playfulsparkle.com)"
+    ],
+    "homepage": "https://github.com/playfulsparkle/robotstxt.js",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/playfulsparkle/robotstxt.js.git"
+    },
+    "ignore": []
+}
