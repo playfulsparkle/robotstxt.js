@@ -194,13 +194,14 @@
                 return normalizedUrl === exactPath;
             }
 
-            // Handle wildcard matching
-            const pattern = normalizedRule
-                .replace(/\*/g, '.*')       // Convert * to .*
-                .replace(/\//g, '\\/')      // Escape slashes
-                .replace(/\.\*/g, '.*?');   // Make non-greedy
+            // Escape all regex special characters except *
+            let regexPattern = normalizedRule
+                .replace(/[.^$+?(){}[\]|\\]/g, '\\$&')  // Escape special chars
+                .replace(/\*/g, '.*');                   // Handle wildcards
 
-            return new RegExp(`^${pattern}`).test(normalizedUrl);
+            // Create and test regex
+            const pattern = new RegExp(`^${regexPattern}`);
+            return pattern.test(normalizedUrl);
         }
 
         normalizePath(path) {
