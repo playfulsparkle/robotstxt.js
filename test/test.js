@@ -101,7 +101,7 @@ Sitemap: https://playfulsparkle.com/sitemap.xml";
     });
 
     it("should handle query parameters in URLs", function() {
-        const rules = `User-agent: *\nDisallow: /search?`;
+        const rules = `User-agent: *\nDisallow: /search?*q=`;
         const r = robotstxt(rules);
         assert.equal(false, r.isAllowed("/search?q=test", "*"));
         assert.equal(true, r.isAllowed("/search", "*"));
