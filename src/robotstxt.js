@@ -3,10 +3,49 @@
 !function () {
     "use strict"
 
+    class Rule {
+        constructor(type, path) {
+            this.type = type
+            this.path = path
+        }
+    }
+
+    class Group {
+        constructor(userAgent) {
+            this.userAgent = userAgent
+            this.crawlDelay = null
+            this.rules = []
+        }
+
+        getName() {
+            return this.userAgent
+        }
+
+        getCrawlDelay() {
+            return this.crawlDelay
+        }
+
+        getRules() {
+            return this.rules
+        }
+
+        allow(path) {
+            this.addRule("allow", path)
+        }
+
+        disallow(path) {
+            this.addRule("disallow", path)
+        }
+
+        addRule(type, path) {
+            this.rules.push(new Rule(type, path))
+        }
+    }
+
     class RobotsTxtParser {
         constructor(content) {
             this.parsedData = {
-                groups: [],  // Format: { userAgent: string, rules: Array<{ type: "allow"|"disallow", path: string }> }
+                groups: [],
                 sitemaps: []
             }
 
@@ -51,7 +90,7 @@
 
             let user_agent_list = []
             let same_ua = false
-            let groups = []
+            let groups = {}
 
             for (let index = 0; index < new_content.length; index++) {
                 const current = new_content[index]
@@ -61,21 +100,17 @@
                     user_agent_list.push(current.value)
 
                     if (!groups[current.value]) {
-                        groups[current.value] = {
-                            userAgent: current.value,
-                            crawlDelay: null,
-                            rules: []
-                        }
+                        groups[current.value] = new Group(current.value)
                     }
                 } else if (current.directive === "allow") {
                     for (const agent of user_agent_list) {
-                        groups[agent].rules.push({ type: "allow", path: current.value })
+                        groups[agent].allow(current.value)
                     }
 
                     same_ua = true
                 } else if (current.directive === "disallow") {
                     for (const agent of user_agent_list) {
-                        groups[agent].rules.push({ type: "disallow", path: current.value })
+                        groups[agent].disallow(current.value)
                     }
 
                     same_ua = true
@@ -106,15 +141,7 @@
             this.parsedData.groups = Object.values(groups)
         }
 
-        crawlDelay(userAgent = "*") {
-            const exact = this.parsedData.groups.find(
-                g => g.userAgent.toLowerCase() === userAgent.toLowerCase()
-            )
-
-            return (exact && exact.crawlDelay) || null
-        }
-
-        getRules(userAgent = "*") {
+        getUserAgent(userAgent = "*") {
             return this.parsedData.groups.find(
                 g => g.userAgent.toLowerCase() === userAgent.toLowerCase()
             ) || null
@@ -150,6 +177,10 @@
             return mostSpecific.type === "allow"
         }
 
+        isDisallowed(url, userAgent = "*") {
+            return !this.isAllowed(url, userAgent)
+        }
+
         getRuleSpecificity(path) {
             let specificity = path.length
 
@@ -160,10 +191,6 @@
             }
 
             return specificity
-        }
-
-        isDisallowed(url, userAgent = "*") {
-            return !this.isAllowed(url, userAgent)
         }
 
         // Helper methods
@@ -179,7 +206,7 @@
 
         getApplicableRules(userAgent) {
             return this.getApplicableGroups(userAgent)
-                .flatMap(g => g.rules)
+                .flatMap(g => g.getRules())
         }
 
         normalizeUrlPath(url) {
@@ -214,7 +241,7 @@
             return singleSlash.startsWith("/") ? singleSlash : `/${singleSlash}`
         }
 
-        get sitemaps() {
+        getSitemaps() {
             return this.parsedData.sitemaps
         }
     }

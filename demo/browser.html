@@ -10,10 +10,18 @@
 
 <body>
     <script>
-        const robot = robotstxt(`User-agent: *\nDisallow: /search?`);
-
-        console.log(robot.getRules("*"));
-        console.log(robot.isAllowed("/search?q=test", "*"));
+        const r = robotstxt(`User-Agent: GoogleBot
+        Allow: /
+        Disallow: /
+        Crawl-Delay: 10
+        Sitemap: https://mywebsite.com/sitemap.xml`); // Returns RobotsTxtParser
+        console.log(r.isAllowed("/my-path", "GoogleBot")); // Returns true
+        console.log(r.isDisallowed("/my-path", "GoogleBot")); // Returns false
+        const ua = r.getUserAgent("GoogleBot");
+        console.log(ua.getName()); // Returns GoogleBot
+        console.log(ua.getCrawlDelay()); // Returns 10
+        console.log(ua.getRules()); // Returns Rule[]
+        console.log(r.getSitemaps()); // Returns array of sitemap URLs
     </script>
 </body>
 

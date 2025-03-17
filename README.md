@@ -3,7 +3,7 @@
 **robotstxt.js** is a lightweight, compliant JavaScript parser for **robots.txt** files, working in both browsers and Node.js environments.
 
 ## Features
-- Full compliance with Google's robots.txt specification
+- Full compliance with Google"s robots.txt specification
 - Zero-dependency implementation
 - Support for wildcard patterns (`*`) and URL matching
 - Crawl-delay handling
@@ -14,11 +14,18 @@
 
 ## Usage
 ```javascript
-const r = robotstxt(`User-Agent: *\nAllowed: /\nCrawl-Delay: 10\n\nSitemap: https://mywebsite.com/sitemap.xml`); // Returns RobotsTxtParser
-r.isAllowed('/my-path', '*'); // Returns true
-r.isDisallowed('/my-path', '*'); // Returns false
-r.crawlDelay('*'); // Returns 10
-r.sitemaps; // Returns array of sitemap URLs
+const r = robotstxt(`User-Agent: GoogleBot
+    Allow: /
+    Disallow: /
+    Crawl-Delay: 10
+    Sitemap: https://mywebsite.com/sitemap.xml`); // Returns RobotsTxtParser
+r.isAllowed("/my-path", "GoogleBot"); // Returns true
+r.isDisallowed("/my-path", "GoogleBot"); // Returns false
+const ua = r.getUserAgent("GoogleBot");
+ua.getName(); // Returns GoogleBot
+ua.getCrawlDelay(); // Returns 10
+ua.getRules(); // Returns Rule[]
+r.getSitemaps(); // Returns array of sitemap URLs
 ```
 
 ## Installation
@@ -51,7 +58,7 @@ Check if a URL is disallowed for given user-agent
 
 Get crawl delay in seconds for specified user-agent
 
-`sitemaps: string[]`
+`getSitemaps(): string[]`
 
 Get array of discovered sitemap URLs
 
