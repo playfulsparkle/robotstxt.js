@@ -191,7 +191,7 @@ describe("Check rules match", function () {
 })
 
 describe("Order of precedence for rules", function () {
-    it("Allow: /p, because it\"s more specific", function () {
+    it("Allow: /p, because it's more specific", function () {
         const rules = `User-agent: *
 Allow: /p
 Disallow: /`
@@ -209,7 +209,7 @@ Disallow: /folder`
         assert.strictEqual(true, robots.isAllowed("/folder/page", "*"))
     })
 
-    it("Disallow: /*.htm, because the rule path is longer and it matches more characters in the URL, so it\"s more specific", function () {
+    it("Disallow: /*.htm, because the rule path is longer and it matches more characters in the URL, so it's more specific", function () {
         const rules = `User-agent: *
 Allow: /page
 Disallow: /*.htm`
@@ -227,7 +227,7 @@ Disallow: /*.ph`
         assert.strictEqual(true, robots.isAllowed("/page.php5", "*"))
     })
 
-    it("Allow: /$, because it\"s more specific", function () {
+    it("Allow: /$, because it's more specific", function () {
         const rules = `User-agent: *
 Allow: /$
 Disallow: /`
