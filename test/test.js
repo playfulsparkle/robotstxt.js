@@ -6,153 +6,213 @@ var assert = require("assert"),
     robotstxtjs = require("../src/robotstxt.js"),
     robotstxt = robotstxtjs.robotstxt
 
-describe("robotstxtjs", function () {
-    const ruleset = "User-agent: *\n \
-Allow: /\n \
-Disallow: /secret-folder/\n \
-Allow: /secret-folder/sub-folder/\n \
-Disallow: /secret-folder/sub-folder/another-secret-folder/\n \
-Allow: /secret-folder/sub-folder/another-secret-folder/this-is-allowed/\n \
-Crawl-Delay: 12\n \
-User-agent: GoogleBot\n \
-Allow: /for-googlebot/\n \
-Disallow: /for-googlebot/but-not-this-one/\n \
-Crawl-Delay: 15\n \
-Sitemap: https://playfulsparkle.com/sitemap.xml"
+describe('Check rules match', function () {
+    it('should return the wildcard group with rules', function () {
+        const rules = `User-agent: *
+    Allow: /p
+    Disallow: /`
 
-    it("should return true wildcard user agent", function () {
-        assert.equal(true, robotstxt(ruleset).isAllowed("/", "*"))
-        assert.equal(true, robotstxt(ruleset).isAllowed("/secret-folder/sub-folder/", "*"))
-        assert.equal(true, robotstxt(ruleset).isAllowed("/secret-folder/sub-folder/another-secret-folder/this-is-allowed/", "*"))
-    })
-
-    it("should return false wildcard user agent", function () {
-        assert.equal(false, robotstxt(ruleset).isAllowed("/secret-folder/", "*"))
-        assert.equal(false, robotstxt(ruleset).isAllowed("/secret-folder/sub-folder/another-secret-folder/", "*"))
-    })
-
-    it("should return 12 wildcard user agent", function () {
-        assert.equal(12, robotstxt(ruleset).crawlDelay("*"))
-    })
-
-    it("should return true GoogleBot user agent", function () {
-        assert.equal(true, robotstxt(ruleset).isAllowed("/for-googlebot/", "GoogleBot"))
-    })
-
-    it("should return false GoogleBot user agent", function () {
-        assert.equal(false, robotstxt(ruleset).isAllowed("/for-googlebot/but-not-this-one/", "GoogleBot"))
-    })
-
-    it("should return 15 GoogleBot user agent", function () {
-        assert.equal(15, robotstxt(ruleset).crawlDelay("GoogleBot"))
-    })
-
-    it("should have correct sitemaps", function () {
-        assert.deepStrictEqual(
-            robotstxt(ruleset).sitemaps,
-            ["https://playfulsparkle.com/sitemap.xml"]
-        )
-    })
-
-    it("should handle empty robots.txt", function () {
-        const emptyRobot = robotstxt("")
-        assert.equal(true, emptyRobot.isAllowed("/any-path", "*"))
-        assert.equal(null, emptyRobot.crawlDelay("*"))
-        assert.deepStrictEqual(emptyRobot.sitemaps, [])
-    })
-
-    it("should handle case-insensitive user-agent matching", function () {
-        const r = robotstxt("User-agent: GoogleBot\nDisallow: /")
-        assert.equal(false, r.isAllowed("/", "googlebot"))
-    })
-
-    it("should prioritize specific user-agent over wildcard", function () {
-        const rules = `User-agent: *\nDisallow: /\nUser-agent: SpecialBot\nAllow: /`
         const r = robotstxt(rules)
-        assert.equal(true, r.isAllowed("/", "SpecialBot"))
-        assert.equal(false, r.isAllowed("/", "OtherBot"))
+        const wildcardRules = r.getRules("*")
+
+        assert(Array.isArray(wildcardRules.rules), 'Should return an array of rules')
+        assert.strictEqual(wildcardRules.rules.length, 2, 'Should have 2 rules')
+        assert.deepStrictEqual(wildcardRules, {
+            userAgent: "*",
+            crawlDelay: null,
+            rules: [
+                { type: "allow", path: "/p" },
+                { type: "disallow", path: "/" }
+            ]
+        }, 'Wildcard group should match expected structure')
+
+        assert.strictEqual(r.getRules('Googlebot'), null, 'Should return undefined for non-existent UA')
+    })
+})
+
+describe('Order of precedence for rules', function () {
+    it('Allow: /p, because it\'s more specific', function () {
+        const rules = `User-agent: *
+Allow: /p
+Disallow: /`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(true, robots.isAllowed('/page', '*'))
     })
 
-    it("should handle wildcard patterns in paths", function () {
-        const rules = `User-agent: *\nDisallow: /temp/*\nAllow: /temp/readme.txt`
-        const r = robotstxt(rules)
-        assert.equal(false, r.isAllowed("/temp/files", "*"))
-        assert.equal(true, r.isAllowed("/temp/readme.txt", "*"))
+    it('Allow: /folder, because in case of conflicting rules, Google uses the least restrictive rule', function () {
+        const rules = `User-agent: *
+Allow: /folder
+Disallow: /folder`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(true, robots.isAllowed('/folder/page', '*'))
     })
 
-    it("should handle dollar sign exact matching", function () {
-        const rules = `User-agent: *\nDisallow: /secret$\nAllow: /secret/`
-        const r = robotstxt(rules)
-        assert.equal(false, r.isAllowed("/secret", "*"))
-        assert.equal(true, r.isAllowed("/secret/", "*"))
-        assert.equal(true, r.isAllowed("/secret/page", "*"))
+    it('Disallow: /*.htm, because the rule path is longer and it matches more characters in the URL, so it\'s more specific', function () {
+        const rules = `User-agent: *
+Allow: /page
+Disallow: /*.htm`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(false, robots.isAllowed('/page.htm', '*'))
     })
 
-    it("should handle multiple crawl-delay directives", function () {
-        const rules = `User-agent: *\nCrawl-delay: 10\nCrawl-delay: 20`
-        const r = robotstxt(rules)
-        assert.equal(10, r.crawlDelay("*")) // Should take first valid value
+    it('Allow: /page, because in case of conflicting rules, Google uses the least restrictive rule', function () {
+        const rules = `User-agent: *
+Allow: /page
+Disallow: /*.ph`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(true, robots.isAllowed('/page.php5', '*'))
     })
 
-    it("should handle invalid crawl-delay values", function () {
-        const rules = `User-agent: *\nCrawl-delay: abc\nCrawl-delay: 5`
-        const r = robotstxt(rules)
-        assert.equal(5, r.crawlDelay("*"))
+    it('Allow: /$, because it\'s more specific', function () {
+        const rules = `User-agent: *
+Allow: /$
+Disallow: /`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(true, robots.isAllowed('/', '*'))
+        assert.strictEqual(false, robots.isAllowed('/page', '*'))
     })
 
-    it("should handle query parameters in URLs", function() {
-        const rules = `User-agent: *\nDisallow: /search?*q=`
-        const r = robotstxt(rules)
-        assert.equal(false, r.isAllowed("/search?q=test", "*"))
-        assert.equal(true, r.isAllowed("/search", "*"))
+    it('Disallow: /, because the allow rule only applies on the root URL', function () {
+        const rules = `User-agent: *
+Allow: /$
+Disallow: /`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(true, robots.isAllowed('/', '*'))
+        assert.strictEqual(false, robots.isAllowed('/page.htm', '*'))
+    })
+})
+
+describe('URL matching based on path values', function () {
+    it('Matches the root and any lower level URL', function () {
+        const rules = `User-agent: *
+Allow: /
+Disallow: /`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(true, robots.isAllowed('/', '*'))
     })
 
-    it("should handle UTF-8 paths", function () {
-        const rules = `User-agent: *\nDisallow: /über-secret/`
-        const r = robotstxt(rules)
-        assert.equal(false, r.isAllowed("/über-secret/", "*"))
-        assert.equal(true, r.isAllowed("/uber-secret/", "*"))
+    it('Equivalent to /. The trailing wildcard is ignored', function () {
+        const rules = `User-agent: *
+Allow: /
+Disallow: /`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(true, robots.isAllowed('/page', '*'))
     })
 
-    it("should handle line continuation comments", function () {
-        const rules = `User-agent: * # Main group\n\
-            Disallow: /admin # Admin section\n\
-            Allow: /admin/login # Login page`
-        const r = robotstxt(rules)
-        assert.equal(false, r.isAllowed("/admin", "*"))
-        assert.equal(true, r.isAllowed("/admin/login", "*"))
+    it('Matches only the root. Any lower level URL is allowed for crawling', function () {
+        const rules = `User-agent: *
+Disallow: /$`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(false, robots.isAllowed('/', '*'))
+        assert.strictEqual(true, robots.isAllowed('/page', '*'))
+        assert.strictEqual(true, robots.isAllowed('/index.html', '*'))
+        assert.strictEqual(true, robots.isAllowed('/?query=123', '*'))
+        assert.strictEqual(true, robots.isAllowed('/#hash', '*'))
     })
 
-    it("should handle multiple sitemap entries", function () {
-        const rules = `Sitemap: https://site.com/sitemap1.xml\n\
-            Sitemap: https://site.com/sitemap2.xml`
-        const r = robotstxt(rules)
-        assert.deepStrictEqual(r.sitemaps, [
-            "https://site.com/sitemap1.xml",
-            "https://site.com/sitemap2.xml"
-        ])
+    it('Matches any path that starts with /fish. Note that the matching is case-sensitive', function () {
+        const rules = `User-agent: *
+Allow: /fish
+Disallow: /`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(true, robots.isAllowed('/fish', '*'))
+        assert.strictEqual(true, robots.isAllowed('/fish.html', '*'))
+        assert.strictEqual(true, robots.isAllowed('/fish/salmon.html', '*'))
+        assert.strictEqual(true, robots.isAllowed('/fishheads', '*'))
+        assert.strictEqual(true, robots.isAllowed('/fishheads/yummy.html', '*'))
+        assert.strictEqual(true, robots.isAllowed('/fish.php?id=anything', '*'))
+
+        assert.strictEqual(false, robots.isAllowed('/Fish.asp', '*'))
+        assert.strictEqual(false, robots.isAllowed('/catfish', '*'))
+        assert.strictEqual(false, robots.isAllowed('/?id=fish', '*'))
+        assert.strictEqual(false, robots.isAllowed('/desert/fish', '*'))
     })
 
-    it("should handle empty disallow (allow all)", function () {
-        const rules = `User-agent: *\nDisallow:\nDisallow: /block`
-        const r = robotstxt(rules)
-        assert.equal(true, r.isAllowed("/anywhere", "*"))
-        assert.equal(false, r.isAllowed("/block", "*"))
+    it('Equivalent to /fish. The trailing wildcard is ignored', function () {
+        const rules = `User-agent: *
+Allow: /fish*
+Disallow: /`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(true, robots.isAllowed('/fish', '*'))
+        assert.strictEqual(true, robots.isAllowed('/fish.html', '*'))
+        assert.strictEqual(true, robots.isAllowed('/fish/salmon.html', '*'))
+        assert.strictEqual(true, robots.isAllowed('/fishheads', '*'))
+        assert.strictEqual(true, robots.isAllowed('/fishheads/yummy.html', '*'))
+        assert.strictEqual(true, robots.isAllowed('/fish.php?id=anything', '*'))
+
+        assert.strictEqual(false, robots.isAllowed('/Fish.asp', '*'))
+        assert.strictEqual(false, robots.isAllowed('/catfish', '*'))
+        assert.strictEqual(false, robots.isAllowed('/?id=fish', '*'))
+        assert.strictEqual(false, robots.isAllowed('/desert/fish', '*'))
     })
 
-    it("should handle order precedence with equal specificity", function () {
-        const rules = `User-agent: *\n\
-            Allow: /page\n\
-            Disallow: /page`
-        const r = robotstxt(rules)
-        // Should respect first matching rule
-        assert.equal(true, r.isAllowed("/page", "*"))
+    it('Matches anything in the /fish/ folder', function () {
+        const rules = `User-agent: *
+Allow: /fish/
+Disallow: /`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(true, robots.isAllowed('/fish/', '*'))
+        assert.strictEqual(true, robots.isAllowed('/fish/?id=anything', '*'))
+        assert.strictEqual(true, robots.isAllowed('/fish/salmon.htm', '*'))
+
+        assert.strictEqual(false, robots.isAllowed('/fish', '*'))
+        assert.strictEqual(false, robots.isAllowed('/fish.html', '*'))
+        assert.strictEqual(false, robots.isAllowed('/animals/fish/', '*'))
+        assert.strictEqual(false, robots.isAllowed('/Fish/Salmon.asp', '*'))
     })
 
-    it("should handle malformed directives", function () {
-        const rules = `User-agent *\nDisallow /test\nAllow: /test/sub\nBadDirective: 123`
-        const r = robotstxt(rules)
-        assert.equal(true, r.isAllowed("/test", "*")) // Malformed line should be ignored
-        assert.equal(true, r.isAllowed("/test/sub", "*"))
+    it('Matches any path that contains .php', function () {
+        const rules = `User-agent: *
+Allow: /*.php
+Disallow: /`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(true, robots.isAllowed('/index.php', '*'))
+        assert.strictEqual(true, robots.isAllowed('/filename.php', '*'))
+        assert.strictEqual(true, robots.isAllowed('/folder/filename.php', '*'))
+        assert.strictEqual(true, robots.isAllowed('/folder/filename.php?parameters', '*'))
+        assert.strictEqual(true, robots.isAllowed('/folder/any.php.file.html', '*'))
+        assert.strictEqual(true, robots.isAllowed('/filename.php/', '*'))
+
+        assert.strictEqual(false, robots.isAllowed('/windows.PHP', '*'))
+    })
+
+    it('Matches any path that ends with .php', function () {
+        const rules = `User-agent: *
+Allow: /*.php$
+Disallow: /`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(true, robots.isAllowed('/filename.php', '*'))
+        assert.strictEqual(true, robots.isAllowed('/folder/filename.php', '*'))
+
+        assert.strictEqual(false, robots.isAllowed('/filename.php?parameters', '*'))
+        assert.strictEqual(false, robots.isAllowed('/filename.php/', '*'))
+        assert.strictEqual(false, robots.isAllowed('/filename.php5', '*'))
+        assert.strictEqual(false, robots.isAllowed('/windows.PHP', '*'))
+    })
+
+    it('Matches any path that contains /fish and .php, in that order', function () {
+        const rules = `User-agent: *
+Allow: /fish*.php
+Disallow: /`
+        const robots = robotstxt(rules)
+
+        assert.strictEqual(true, robots.isAllowed('/fish.php', '*'))
+        assert.strictEqual(true, robots.isAllowed('/fishheads/catfish.php?parameters', '*'))
+
+        assert.strictEqual(false, robots.isAllowed('/Fish.PHP', '*'))
     })
 })

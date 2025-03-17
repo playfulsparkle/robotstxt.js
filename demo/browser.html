@@ -12,6 +12,7 @@
     <script>
         const robot = robotstxt(`User-agent: *\nDisallow: /search?`);
 
+        console.log(robot.getRules("*"));
         console.log(robot.isAllowed("/search?q=test", "*"));
     </script>
 </body>
