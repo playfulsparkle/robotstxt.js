@@ -17,6 +17,31 @@
             this.type = type
             /** @member {string} */
             this.path = path
+            /** @member {string} */
+            this.regex = this.createRegex(path)
+        }
+
+        /**
+         * Test if a normalized URL path matches this rule's pattern
+         * @param {string} path - Normalized URL path to test against
+         * @return {boolean} - True if the path matches the rule's pattern
+         */
+        match(path) {
+            return this.regex.test(path)
+        }
+
+        /**
+         * Convert robots.txt path pattern to regular expression
+         * @private
+         * @param {string} path - Normalized URL path pattern to convert
+         * @return {RegExp} - Regular expression for path matching
+         */
+        createRegex(path) {
+            const pattern = path
+                .replace(/[.^+?(){}[\]|\\]/gu, "\\$&")  // Escape regex special characters
+                .replace(/\*/gu, ".*?")                // Replace * with non-greedy wildcard
+
+            return new RegExp(`^${pattern}`, "u")
         }
     }
 
@@ -110,12 +135,6 @@
                 sitemaps: []
             }
 
-            /**
-             * @private
-             * @member {Object}
-             */
-            this.pathMatchesCache = {}
-
             this.parse(content)
         }
 
@@ -183,11 +202,13 @@
                     }
                 }
                 else if (current.directive === "allow") {
-                    user_agent_list.forEach(agent => temp_groups[agent].allow(current.value))
+                    const normalizedPath = this.normalizePath(current.value)
+                    user_agent_list.forEach(agent => temp_groups[agent].allow(normalizedPath))
                     same_ua = true
                 }
                 else if (current.directive === "disallow") {
-                    user_agent_list.forEach(agent => temp_groups[agent].disallow(current.value))
+                    const normalizedPath = this.normalizePath(current.value)
+                    user_agent_list.forEach(agent => temp_groups[agent].disallow(normalizedPath))
                     same_ua = true
                 }
                 else if (current.directive === "crawl-delay") {
@@ -238,7 +259,7 @@
             const matchingRules = []
 
             for (const rule of rules) {
-                if (this.pathMatches(rule.path, urlPath)) {
+                if (rule.match(urlPath)) {
                     matchingRules.push(rule)
                 }
             }
@@ -349,35 +370,6 @@
             } catch (error) {
                 return this.normalizePath(url)
             }
-        }
-
-        /**
-         * Check if URL path matches rule pattern
-         * @private
-         * @param {string} rulePath - Rule path pattern
-         * @param {string} urlPath - Normalized URL path
-         * @return {boolean} - True if path matches pattern
-         */
-        pathMatches(rulePath, urlPath) {
-            /** @type {string} */
-            const cacheKey = `${rulePath}__${urlPath}`
-            if (this.pathMatchesCache.hasOwnProperty(cacheKey)) {
-                return this.pathMatchesCache[cacheKey]
-            }
-
-            /** @type {string} */
-            const normalizedPath = this.normalizePath(rulePath)
-
-            const regexPattern = normalizedPath
-                .replace(/[.^+?(){}[\]|\\]/gu, "\\$&")
-                .replace(/\*/gu, ".*?")
-
-            /** @type {boolean} */
-            const result = new RegExp(`^${regexPattern}`, "u").test(urlPath)
-
-            this.pathMatchesCache[cacheKey] = result
-
-            return result
         }
 
         /**

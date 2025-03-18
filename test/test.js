@@ -187,6 +187,14 @@ describe("Check rules match", function () {
         constructor(type, path) {
             this.type = type
             this.path = path
+            this.regex = this.createRegex(path)
+        }
+
+        createRegex(path) {
+            const pattern = path
+                .replace(/[.^+?(){}[\]|\\]/gu, "\\$&")
+                .replace(/\*/gu, ".*?")
+            return new RegExp(`^${pattern}`, "u")
         }
     }
 
