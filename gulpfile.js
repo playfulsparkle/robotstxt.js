@@ -1,6 +1,6 @@
 "use strict"
 
-var pkg = require("./package.json"),
+const pkg = require("./package.json"),
     gulp = require("gulp"),
     uglify = require("gulp-uglify"),
     rename = require("gulp-rename"),

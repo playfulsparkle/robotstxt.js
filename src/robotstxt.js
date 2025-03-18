@@ -66,6 +66,7 @@
          * @param {string} path - URL path pattern to allow
          */
         allow(path) {
+            if (typeof path === "undefined") throw new Error("The 'path' parameter is required.")
             this.addRule("allow", path)
         }
 
@@ -74,17 +75,17 @@
          * @param {string} path - URL path pattern to disallow
          */
         disallow(path) {
+            if (typeof path === "undefined") throw new Error("The 'path' parameter is required.")
             this.addRule("disallow", path)
         }
 
         /**
          * Internal method to add a rule
+         * @private
          * @param {string} type - Rule type ('allow' or 'disallow')
          * @param {string} path - URL path pattern
          */
         addRule(type, path) {
-            if (typeof type === "undefined") throw new Error("The 'type' parameter is required.")
-            if (typeof path === "undefined") throw new Error("The 'path' parameter is required.")
             this.rules.push(new Rule(type, path))
         }
     }
@@ -126,22 +127,26 @@
         parse(content) {
             if (typeof content === "undefined") throw new Error("The 'content' parameter is required.")
 
+            /** @type {string[]} */
             const new_content = []
 
             for (const line of content.split(/\r\n|\r|\n/)) {
+                /** @type {string} */
                 let processedLine = line.trim()
 
                 if (!processedLine || processedLine.startsWith('#')) continue
 
+                /** @type {number} */
                 const colonIndex = processedLine.indexOf(':')
-
                 if (colonIndex === -1) continue
 
+                /** @type {string} */
                 const directive = processedLine.slice(0, colonIndex).trim().toLowerCase()
+                /** @type {string} */
                 let value = processedLine.slice(colonIndex + 1).trim()
 
+                /** @type {number} */
                 const commentIndex = value.search(/(?:\s|^)#/)
-
                 if (commentIndex !== -1) {
                     value = value.slice(0, commentIndex).trim()
                 }
@@ -156,14 +161,18 @@
                 new_content.unshift({ directive: "user-agent", value: "*" })
             }
 
+            /** @type {string[]} */
             let user_agent_list = []
+            /** @type {boolean} */
             let same_ua = false
             /** @type {Object.<string, Group>} */
             const temp_groups = {}
 
             // Process each directive and build rule groups
             for (let index = 0; index < new_content.length; index++) {
+                /** @type {Object.<string, string>} */
                 const current = new_content[index]
+                /** @type {Object.<string, string>} */
                 const next = new_content[index + 1]
 
                 if (current.directive === "user-agent") {
@@ -221,8 +230,11 @@
             if (typeof url === "undefined") throw new Error("The 'url' parameter is required.")
             if (typeof userAgent === "undefined") throw new Error("The 'userAgent' parameter is required.")
 
+            /** @type {Rule[]} */
             const rules = this.getApplicableRules(userAgent)
+            /** @type {string} */
             const urlPath = this.normalizeUrlPath(url)
+            /** @type {Rule[]} */
             const matchingRules = []
 
             for (const rule of rules) {
@@ -233,10 +245,14 @@
 
             if (matchingRules.length === 0) return true
 
-            // Find most specific rule based on path length and special characters
+            /** @type {Rule} */
             let mostSpecific = matchingRules[0]
+
+            // Find most specific rule based on path length and special characters
             for (const rule of matchingRules) {
+                /** @type {number} */
                 const currentSpecificity = this.getRuleSpecificity(rule.path)
+                /** @type {number} */
                 const mostSpecificSpecificity = this.getRuleSpecificity(mostSpecific.path)
 
                 if (currentSpecificity > mostSpecificSpecificity) {
@@ -289,6 +305,7 @@
          * @return {number} - Specificity score (higher = more specific)
          */
         getRuleSpecificity(path) {
+            /** @type {number} */
             let specificity = path.length
             if (path.indexOf("*") !== -1) specificity -= 0.5
             else if (path.slice(-1) === "$") specificity += 0.5
@@ -302,6 +319,7 @@
          * @return {Group[]} - Array of matching groups
          */
         getApplicableGroups(userAgent) {
+            /** @type {Group[]} */
             const exactGroups = this.parsedData.groups.filter(group => group.getName().toLowerCase() === userAgent.toLowerCase())
             if (exactGroups.length > 0) return exactGroups
             return this.parsedData.groups.filter(group => group.getName() === "*")
@@ -314,6 +332,7 @@
          * @return {Rule[]} - Array of applicable rules
          */
         getApplicableRules(userAgent) {
+            /** @type {Rule[]} */
             const rules = this.getApplicableGroups(userAgent)
             return rules.reduce((acc, group) => acc.concat(group.getRules()), [])
         }
@@ -340,18 +359,24 @@
          * @return {boolean} - True if path matches pattern
          */
         pathMatches(rulePath, urlPath) {
+            /** @type {string} */
             const cacheKey = `${rulePath}__${urlPath}`
             if (this.pathMatchesCache.hasOwnProperty(cacheKey)) {
                 return this.pathMatchesCache[cacheKey]
             }
 
-            const normalizedRule = this.normalizePath(rulePath)
-            let regexPattern = normalizedRule
+            /** @type {string} */
+            const normalizedPath = this.normalizePath(rulePath)
+
+            const regexPattern = normalizedPath
                 .replace(/[.^+?(){}[\]|\\]/gu, "\\$&")
                 .replace(/\*/gu, ".*")
 
+            /** @type {boolean} */
             const result = new RegExp(`^${regexPattern}`, "u").test(urlPath)
+
             this.pathMatchesCache[cacheKey] = result
+
             return result
         }
 
@@ -362,10 +387,12 @@
          * @return {string} - Normalized path
          */
         normalizePath(path) {
-            const decoded = decodeURIComponent(path)
-            const singleSlash = decoded.replace(/\/+/gu, "/")
-            if (singleSlash[0] === "/") return singleSlash
-            return `/${singleSlash}`
+            /** @type {string} */
+            const decodedPath = decodeURIComponent(path)
+            /** @type {string} */
+            const newPath = decodedPath.replace(/\/+/gu, "/")
+            if (newPath[0] === "/") return newPath
+            return `/${newPath}`
         }
     }
 
