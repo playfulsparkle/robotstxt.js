@@ -37,5 +37,12 @@
     },
     "overrides": {
         "graceful-fs": "^4.2.11"
+    },
+    "files": [
+        "dist",
+        "README.md"
+    ],
+    "publishConfig": {
+        "access": "public"
     }
 }
