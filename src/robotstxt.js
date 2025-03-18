@@ -83,8 +83,8 @@
          * @param {string} path - URL path pattern
          */
         addRule(type, path) {
-            if (typeof type === 'undefined') throw new Error("The 'type' parameter is required.")
-            if (typeof path === 'undefined') throw new Error("The 'path' parameter is required.")
+            if (typeof type === "undefined") throw new Error("The 'type' parameter is required.")
+            if (typeof path === "undefined") throw new Error("The 'path' parameter is required.")
             this.rules.push(new Rule(type, path))
         }
     }
@@ -124,29 +124,27 @@
          * @param {string} content - Raw robots.txt content
          */
         parse(content) {
-            if (typeof content === 'undefined') throw new Error("The 'content' parameter is required.")
+            if (typeof content === "undefined") throw new Error("The 'content' parameter is required.")
 
             const new_content = []
 
-            // Preprocess lines: trim, remove comments, and split directives
             for (const line of content.split(/\r\n|\r|\n/)) {
                 let processedLine = line.trim()
 
-                const commentIndex = processedLine.indexOf("#")
+                if (!processedLine || processedLine.startsWith('#')) continue
 
-                // Remove comments
-                if (commentIndex !== -1) {
-                    processedLine = processedLine.slice(0, commentIndex).trim()
-                }
-
-                if (!processedLine) continue
-
-                const colonIndex = processedLine.indexOf(":")
+                const colonIndex = processedLine.indexOf(':')
 
                 if (colonIndex === -1) continue
 
                 const directive = processedLine.slice(0, colonIndex).trim().toLowerCase()
-                const value = processedLine.slice(colonIndex + 1).trim()
+                let value = processedLine.slice(colonIndex + 1).trim()
+
+                const commentIndex = value.search(/(?:\s|^)#/)
+
+                if (commentIndex !== -1) {
+                    value = value.slice(0, commentIndex).trim()
+                }
 
                 if (directive && value) {
                     new_content.push({ directive, value })
@@ -220,8 +218,8 @@
          * @return {boolean} - True if allowed, false if disallowed
          */
         isAllowed(url, userAgent) {
-            if (typeof url === 'undefined') throw new Error("The 'url' parameter is required.")
-            if (typeof userAgent === 'undefined') throw new Error("The 'userAgent' parameter is required.")
+            if (typeof url === "undefined") throw new Error("The 'url' parameter is required.")
+            if (typeof userAgent === "undefined") throw new Error("The 'userAgent' parameter is required.")
 
             const rules = this.getApplicableRules(userAgent)
             const urlPath = this.normalizeUrlPath(url)
@@ -269,7 +267,6 @@
 
         /**
          * Get group for specific user agent
-         * @private
          * @param {string} userAgent - User agent to search for
          * @return {Group|undefined} - Matching group or undefined
          */

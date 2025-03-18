@@ -6,7 +6,24 @@ const assert = require("assert"),
     robotstxtjs = require("../src/robotstxt.js"),
     robotstxt = robotstxtjs.robotstxt
 
-describe("EOL Handling", function () {
+describe("Inline comment handling", function () {
+    it("should handle comments gracefully", function () {
+        const content = `User-Agent: * # Comment after User-Agent directive
+            # Comment before Allow directive - using spaces
+Allow: /folder/*.html#comment # Inline comment after Allow directive
+Disallow: / #Inline comment after Disallow directive - using spaces
+     #Comment next line after Disallow directive
+Crawl-Delay: 10 #Comment after Crawl-Delay`
+        const r = robotstxt(content)
+
+        assert.strictEqual(r.getGroup("*").getRules().length, 2)
+        assert.strictEqual(true, r.isAllowed("/folder/index.html#comment", "*"))
+        assert.strictEqual(true, r.isDisallowed("/", "*"))
+        assert.strictEqual(r.getGroup("*").getCrawlDelay(), 10)
+    })
+})
+
+describe("EOL handling", function () {
     it("should handle LF (Unix) EOLs", function () {
         const content = "User-agent: *\nDisallow: /"
         const r = robotstxt(content)

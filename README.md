@@ -13,6 +13,16 @@
 - Small footprint (< 3 KB minified+gzipped)
 
 ## Usage
+
+### Node.js
+
+```javascript
+const { robotstxt } = require("@playfulsparkle/robotstxt-js")
+...
+```
+
+### JavaScript
+
 ```javascript
 // Parse robots.txt content
 const robotsTxtContent = `
