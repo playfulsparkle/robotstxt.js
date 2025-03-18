@@ -193,17 +193,17 @@
                 else if (current.directive === "crawl-delay") {
                     const crawlDelay = current.value * 1
 
-                    if (!isNaN(crawlDelay)) {
-                        if (crawlDelay <= 0) {
-                            throw new Error(`Crawl-Delay must be a positive number. The provided value is ${crawlDelay}.`)
-                        }
+                    if (isNaN(crawlDelay)) continue
 
-                        user_agent_list.forEach(agent => {
-                            if (!temp_groups[agent].crawlDelay) {
-                                temp_groups[agent].crawlDelay = crawlDelay
-                            }
-                        })
+                    if (crawlDelay <= 0) {
+                        throw new Error(`Crawl-Delay must be a positive number. The provided value is ${crawlDelay}.`)
                     }
+
+                    user_agent_list.forEach(agent => {
+                        if (!temp_groups[agent].crawlDelay) {
+                            temp_groups[agent].crawlDelay = crawlDelay
+                        }
+                    })
                     same_ua = true
                 }
                 else if (current.directive === "sitemap") {
@@ -370,7 +370,7 @@
 
             const regexPattern = normalizedPath
                 .replace(/[.^+?(){}[\]|\\]/gu, "\\$&")
-                .replace(/\*/gu, ".*")
+                .replace(/\*/gu, ".*?")
 
             /** @type {boolean} */
             const result = new RegExp(`^${regexPattern}`, "u").test(urlPath)
@@ -388,7 +388,12 @@
          */
         normalizePath(path) {
             /** @type {string} */
-            const decodedPath = decodeURIComponent(path)
+            let decodedPath
+            try {
+                decodedPath = decodeURIComponent(path)
+            } catch (error) {
+                decodedPath = path
+            }
             /** @type {string} */
             const newPath = decodedPath.replace(/\/+/gu, "/")
             if (newPath[0] === "/") return newPath
