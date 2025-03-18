@@ -72,6 +72,29 @@ Disallow: /shrimp`
         assert.strictEqual(ua.getName(), "googlebot-news")
         assert.deepStrictEqual(ua.getRules().map(rule => rule.path), ["/fish", "/shrimp"])
     })
+
+
+    it("should add wildcard User-Agent, not starting with any User-Agent", function () {
+        const content = `
+Crawl-Delay: 5
+Sitemap: https://example.com/sitemap.xml
+Allow: /public
+Disallow: /private
+User-Agent: GoogleBot
+Allow: /public-a
+Disallow: /private-a`
+
+        const r = robotstxt(content)
+        const uaA = r.getGroup("*")
+
+        assert.strictEqual(uaA.getName(), "*")
+        assert.deepStrictEqual(uaA.getRules().map(rule => rule.path), ["/public", "/private"])
+
+        const uaB = r.getGroup("GoogleBot")
+
+        assert.strictEqual(uaB.getName(), "GoogleBot")
+        assert.deepStrictEqual(uaB.getRules().map(rule => rule.path), ["/public-a", "/private-a"])
+    })
 })
 
 describe("Ignored rules other than allow, disallow, and user-agent", function () {

@@ -126,14 +126,19 @@
         constructor(content) {
             /**
              * @private
-             * @member {Object}
-             * @property {Group[]} groups - Array of user agent groups/rules
-             * @property {string[]} sitemaps - Array of sitemap URLs found in robots.txt
+             * @type {Group[]}
+             * @description Collection of user agent groups containing access rules.
+             *              Represents all parsed User-agent sections from robots.txt
              */
-            this.parsedData = {
-                groups: [],
-                sitemaps: []
-            }
+            this.groups = []
+
+            /**
+             * @private
+             * @type {string[]}
+             * @description Array of absolute URLs to sitemaps specified in robots.txt.
+             *              Collected from Sitemap directives across the entire file.
+             */
+            this.sitemaps = []
 
             this.parse(content)
         }
@@ -147,7 +152,7 @@
             if (typeof content === "undefined") throw new Error("The 'content' parameter is required.")
 
             /** @type {string[]} */
-            const new_content = []
+            const normalizedContent = []
 
             for (const line of content.split(/\r\n|\r|\n/)) {
                 /** @type {string} */
@@ -171,48 +176,52 @@
                 }
 
                 if (directive && value) {
-                    new_content.push({ directive, value })
+                    normalizedContent.push({ directive, value })
                 }
-            }
-
-            // Handle missing initial User-Agent
-            if (new_content[0] && new_content[0].directive !== "user-agent") {
-                new_content.unshift({ directive: "user-agent", value: "*" })
             }
 
             /** @type {string[]} */
-            let user_agent_list = []
+            let userAgentList = []
             /** @type {boolean} */
-            let same_ua = false
+            let sameUserAgent = false
+            /** @type {boolean} */
+            let userAgentSeen = false
             /** @type {Object.<string, Group>} */
-            const temp_groups = {}
+            const tempGroups = {}
 
             // Process each directive and build rule groups
-            for (let index = 0; index < new_content.length; index++) {
+            for (let index = 0; index < normalizedContent.length; index++) {
                 /** @type {Object.<string, string>} */
-                const current = new_content[index]
-                /** @type {Object.<string, string>} */
-                const next = new_content[index + 1]
+                const currentLine = normalizedContent[index]
 
-                if (current.directive === "user-agent") {
-                    user_agent_list.push(current.value)
+                const needsDefaultUa = ["allow", "disallow", "crawl-delay"].includes(currentLine.directive) && !userAgentSeen
 
-                    if (!temp_groups[current.value]) {
-                        temp_groups[current.value] = new Group(current.value)
+                if (currentLine.directive === "user-agent" || needsDefaultUa) {
+                    userAgentSeen = true
+
+                    const uaName = needsDefaultUa ? "*" : currentLine.value
+
+                    if (!userAgentList.includes(uaName)) {
+                        userAgentList.push(uaName)
+                    }
+
+                    if (!tempGroups[uaName]) {
+                        tempGroups[uaName] = new Group(uaName)
                     }
                 }
-                else if (current.directive === "allow") {
-                    const normalizedPath = this.normalizePath(current.value)
-                    user_agent_list.forEach(agent => temp_groups[agent].allow(normalizedPath))
-                    same_ua = true
+
+                if (currentLine.directive === "allow") {
+                    const normalizedPath = this.normalizePath(currentLine.value)
+                    userAgentList.forEach(agent => tempGroups[agent].allow(normalizedPath))
+                    sameUserAgent = true
                 }
-                else if (current.directive === "disallow") {
-                    const normalizedPath = this.normalizePath(current.value)
-                    user_agent_list.forEach(agent => temp_groups[agent].disallow(normalizedPath))
-                    same_ua = true
+                else if (currentLine.directive === "disallow") {
+                    const normalizedPath = this.normalizePath(currentLine.value)
+                    userAgentList.forEach(agent => tempGroups[agent].disallow(normalizedPath))
+                    sameUserAgent = true
                 }
-                else if (current.directive === "crawl-delay") {
-                    const crawlDelay = current.value * 1
+                else if (currentLine.directive === "crawl-delay") {
+                    const crawlDelay = currentLine.value * 1
 
                     if (isNaN(crawlDelay)) continue
 
@@ -220,25 +229,28 @@
                         throw new Error(`Crawl-Delay must be a positive number. The provided value is ${crawlDelay}.`)
                     }
 
-                    user_agent_list.forEach(agent => {
-                        if (!temp_groups[agent].crawlDelay) {
-                            temp_groups[agent].crawlDelay = crawlDelay
+                    userAgentList.forEach(agent => {
+                        if (!tempGroups[agent].crawlDelay) {
+                            tempGroups[agent].crawlDelay = crawlDelay
                         }
                     })
-                    same_ua = true
+                    sameUserAgent = true
                 }
-                else if (current.directive === "sitemap") {
-                    this.parsedData.sitemaps.push(current.value)
+                else if (currentLine.directive === "sitemap") {
+                    this.sitemaps.push(currentLine.value)
                 }
 
+                /** @type {Object.<string, string>} */
+                const nextLine = normalizedContent[index + 1]
+
                 // Reset user agent list on new group
-                if (next && same_ua && next.directive === "user-agent") {
-                    same_ua = false
-                    user_agent_list = []
+                if (nextLine && sameUserAgent && nextLine.directive === "user-agent") {
+                    sameUserAgent = false
+                    userAgentList = []
                 }
             }
 
-            this.parsedData.groups = Object.keys(temp_groups).map(key => temp_groups[key])
+            this.groups = Object.keys(tempGroups).map(key => tempGroups[key])
         }
 
         /**
@@ -299,7 +311,7 @@
          * @return {string[]} - Array of sitemap URLs
          */
         getSitemaps() {
-            return this.parsedData.sitemaps
+            return this.sitemaps
         }
 
         /**
@@ -309,8 +321,8 @@
          */
         getGroup(userAgent) {
             if (!userAgent) return undefined
-            for (let i = 0; i < this.parsedData.groups.length; i++) {
-                const group = this.parsedData.groups[i]
+            for (let i = 0; i < this.groups.length; i++) {
+                const group = this.groups[i]
 
                 if (group.userAgent.toLowerCase() === userAgent.toLowerCase()) {
                     return group
@@ -341,9 +353,9 @@
          */
         getApplicableGroups(userAgent) {
             /** @type {Group[]} */
-            const exactGroups = this.parsedData.groups.filter(group => group.getName().toLowerCase() === userAgent.toLowerCase())
+            const exactGroups = this.groups.filter(group => group.getName().toLowerCase() === userAgent.toLowerCase())
             if (exactGroups.length > 0) return exactGroups
-            return this.parsedData.groups.filter(group => group.getName() === "*")
+            return this.groups.filter(group => group.getName() === "*")
         }
 
         /**
