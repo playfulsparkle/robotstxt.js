@@ -49,12 +49,12 @@ console.log(parser.isAllowed("/protected", "*")); // true (if no wildcard rules 
 
 ### NPM
 ```bash
-npm install robotstxt.js
+npm i @playfulsparkle/robotstxt-js
 ```
 
 ### Bower
 ```bash
-bower install robotstxt.js
+bower install playfulsparkle/robotstxt.js
 ```
 
 ## API
