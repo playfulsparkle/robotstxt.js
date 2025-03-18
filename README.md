@@ -14,18 +14,35 @@
 
 ## Usage
 ```javascript
-const r = robotstxt(`User-Agent: GoogleBot
-    Allow: /
-    Disallow: /
-    Crawl-Delay: 10
-    Sitemap: https://mywebsite.com/sitemap.xml`); // Returns RobotsTxtParser
-r.isAllowed("/my-path", "GoogleBot"); // Returns true
-r.isDisallowed("/my-path", "GoogleBot"); // Returns false
-const ua = r.getUserAgent("GoogleBot");
-ua.getName(); // Returns GoogleBot
-ua.getCrawlDelay(); // Returns 10
-ua.getRules(); // Returns Rule[]
-r.getSitemaps(); // Returns array of sitemap URLs
+// Parse robots.txt content
+const robotsTxtContent = `
+User-Agent: GoogleBot
+Allow: /public
+Disallow: /private
+Crawl-Delay: 5
+Sitemap: https://example.com/sitemap.xml
+`;
+
+const parser = robotstxt(robotsTxtContent);
+
+// Check URL permissions
+console.log(parser.isAllowed("/public/data", "GoogleBot"));  // true
+console.log(parser.isDisallowed("/private/admin", "GoogleBot")); // true
+
+// Get specific user agent group
+const googleBotGroup = parser.getGroup("googlebot"); // Case-insensitive
+if (googleBotGroup) {
+    console.log("Crawl Delay:", googleBotGroup.getCrawlDelay()); // 5
+    console.log("Rules:", googleBotGroup.getRules().map(rule =>
+        `${rule.type}: ${rule.path}`
+    )); // ["allow: /public", "disallow: /private"]
+}
+
+// Get all sitemaps
+console.log("Sitemaps:", parser.getSitemaps()); // ["https://example.com/sitemap.xml"]
+
+// Check default rules (wildcard *)
+console.log(parser.isAllowed("/protected", "*")); // true (if no wildcard rules exist)
 ```
 
 ## Installation
@@ -42,36 +59,41 @@ bower install robotstxt.js
 
 ## API
 
-`robotstxt(content: string): RobotsTxtParser`
+### Core Methods
 
+`robotstxt(content: string): RobotsTxtParser`
 Creates a new parser instance with the provided robots.txt content
 
-`isAllowed(url: string, userAgent?: string): boolean`
+`isAllowed(url: string, userAgent: string): boolean`
+Check if a URL is allowed for specified user agent
 
-Check if a URL is allowed for given user-agent
+`isDisallowed(url: string, userAgent: string): boolean`
+Check if a URL is disallowed for specified user agent
 
-`isDisallowed(url: string, userAgent?: string): boolean`
-
-Check if a URL is disallowed for given user-agent
-
-`crawlDelay(userAgent?: string): number | null`
-
-Get crawl delay in seconds for specified user-agent
+`getGroup(userAgent: string): Group | undefined`
+Get the rules group for specific user agent
 
 `getSitemaps(): string[]`
-
 Get array of discovered sitemap URLs
+
+### Group Methods (via getGroup() result)
+`getName(): string` - Get user agent name for this group
+`getCrawlDelay(): number | undefined` - Get crawl delay in seconds
+`getRules(): Rule[]` - Get all rules for this group
 
 ## Specification Support
 
+### Full Support
 * User-agent groups and inheritance
 * Allow/Disallow directives
 * Wildcard pattern matching (`*`)
-* End-of-pattern matching (`$`)
+* End-of-path matching (`$`)
 * Crawl-delay directives
 * Sitemap discovery
 * Case-insensitive matching
 * Default user-agent (`*`) handling
+* Multiple user-agent declarations
+* Rule precedence by specificity
 
 ## Support
 
@@ -79,18 +101,19 @@ Get array of discovered sitemap URLs
 
 `robotstxt.js` runs in all active Node versions (4.x+).
 
-### Browser
+### Browser Support
 
-`robotstxt.js` should work in all modern browsers.
+This library is written using modern JavaScript (ES6/ES2015) features. It is expected to work in the following browser versions and later:
 
-| Browser       | Version |
-|---------------|---------|
-| Chrome        | 58+     |
-| Firefox       | 54+     |
-| Safari        | 10.1+   |
-| Edge          | 16+     |
-| Mobile Chrome | 64+     |
-| iOS Safari    | 10.3+   |
+| Browser         | Version |
+|-----------------|---------|
+| Chrome          | 49      |
+| Firefox         | 45      |
+| Safari          | 9       |
+| Edge            | 13      |
+| Mobile Chrome   | 49      |
+| iOS Safari      | 9       |
+| Node.js         | 4.0.0   |
 
 ## Performance
 

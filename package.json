@@ -1,6 +1,6 @@
 {
-    "name": "robotstxt-js",
-    "version": "1.0.1",
+    "name": "@playfulsparkle/robotstxt-js",
+    "version": "1.0.3",
     "description": "A lightweight, Open Source robots.txt parser written in JavaScript",
     "author": "Zsolt Oroszlány <hello@playfulsparkle.com>",
     "main": "src/robotstxt.js",
@@ -8,7 +8,8 @@
         "test": "mocha test/*.js",
         "pretest": "npm run lint",
         "lint": "eslint .",
-        "lint:fix": "eslint --fix ."
+        "lint:fix": "eslint --fix .",
+        "publish": "npm publish --access public"
     },
     "repository": {
         "type": "git",

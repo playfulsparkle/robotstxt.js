@@ -6,6 +6,38 @@ const assert = require("assert"),
     robotstxtjs = require("../src/robotstxt.js"),
     robotstxt = robotstxtjs.robotstxt
 
+describe("EOL Handling", function () {
+    it("should handle LF (Unix) EOLs", function () {
+        const content = "User-agent: *\nDisallow: /"
+        const r = robotstxt(content)
+
+        assert.strictEqual(r.getGroup("*").getRules().length, 1)
+    })
+
+    it("should handle CRLF (Windows) EOLs", function () {
+        const content = "User-agent: *\r\nDisallow: /"
+        const r = robotstxt(content)
+
+        assert.strictEqual(r.getGroup("*").getRules().length, 1)
+    })
+
+    it("should handle CR (Old Mac) EOLs", function () {
+        const content = "User-agent: *\rDisallow: /"
+        const r = robotstxt(content)
+
+        assert.strictEqual(r.getGroup("*").getRules().length, 1)
+    })
+
+    it("should handle mixed EOLs", function () {
+        const content = "User-agent: *\nAllow: /foo\r\nDisallow: /bar\rCrawl-Delay: 10"
+        const r = robotstxt(content)
+        const ua = r.getGroup("*")
+
+        assert.strictEqual(ua.getRules().length, 2)
+        assert.strictEqual(ua.getCrawlDelay(), 10)
+    })
+})
+
 describe("Order of precedence for user agents", function () {
     it("should select the most specific user agent group and combine rules correctly", function () {
         const content = `User-Agent: googlebot-news
@@ -18,7 +50,7 @@ User-Agent: googlebot-news
 Disallow: /shrimp`
 
         const r = robotstxt(content)
-        const ua = r.getUserAgent("GoogleBot-News")
+        const ua = r.getGroup("GoogleBot-News")
 
         assert.strictEqual(ua.getName(), "googlebot-news")
         assert.deepStrictEqual(ua.getRules().map(rule => rule.path), ["/fish", "/shrimp"])
@@ -34,8 +66,8 @@ User-Agent: b
 Disallow: /`
 
         const r = robotstxt(content)
-        const uaA = r.getUserAgent("a")
-        const uaB = r.getUserAgent("b")
+        const uaA = r.getGroup("a")
+        const uaB = r.getGroup("b")
 
         assert.strictEqual(uaA.getName(), "a")
         assert.strictEqual(uaB.getName(), "b")
@@ -80,21 +112,28 @@ Sitemap: http://example.com/sitemap2.xml`
 })
 
 describe("Crawl-Delay", function () {
+    it("should throw an error if Crawl-Delay is 0 during parsing", function () {
+        const rules = `User-agent: *
+    Crawl-Delay: 0`
+
+        assert.throws(() => robotstxt(rules), /Crawl-Delay must be a positive number\. The provided value is 0\./, "Error message should indicate invalid Crawl-Delay of 0")
+    })
+
     it("should return the correct crawl delay", function () {
         const rules = `User-agent: *
 Crawl-Delay: 10`
         const r = robotstxt(rules)
-        const ua = r.getUserAgent("*")
+        const ua = r.getGroup("*")
 
         assert.strictEqual(ua.getCrawlDelay(), 10, "Crawl delay should be 10")
     })
 
-    it("should return null if no crawl delay is defined", function () {
+    it("should return undefined if no crawl delay is defined", function () {
         const rules = `User-agent: *`
         const r = robotstxt(rules)
-        const ua = r.getUserAgent("*")
+        const ua = r.getGroup("*")
 
-        assert.strictEqual(ua.getCrawlDelay(), null, "Crawl delay should be null")
+        assert.strictEqual(ua.getCrawlDelay(), undefined, "Crawl delay should be undefined")
     })
 
     it("should return the correct crawl delay for multiple user agents", function () {
@@ -104,8 +143,8 @@ Crawl-Delay: 5
 User-agent: Bingbot
 Crawl-Delay: 15`
         const r = robotstxt(rules)
-        const googlebot = r.getUserAgent("Googlebot")
-        const bingbot = r.getUserAgent("Bingbot")
+        const googlebot = r.getGroup("Googlebot")
+        const bingbot = r.getGroup("Bingbot")
 
         assert.strictEqual(googlebot.getCrawlDelay(), 5, "Googlebot crawl delay should be 5")
         assert.strictEqual(bingbot.getCrawlDelay(), 15, "Bingbot crawl delay should be 15")
@@ -118,8 +157,8 @@ Crawl-Delay: 20
 User-agent: Googlebot
 Crawl-Delay: 5`
         const r = robotstxt(rules)
-        const wildcard = r.getUserAgent("*")
-        const googlebot = r.getUserAgent("Googlebot")
+        const wildcard = r.getGroup("*")
+        const googlebot = r.getGroup("Googlebot")
 
         assert.strictEqual(wildcard.getCrawlDelay(), 20, "Wildcard crawl delay should be 20")
         assert.strictEqual(googlebot.getCrawlDelay(), 5, "Googlebot crawl delay should be 5")
@@ -137,7 +176,7 @@ describe("Check rules match", function () {
     class Group {
         constructor(userAgent) {
             this.userAgent = userAgent
-            this.crawlDelay = null
+            this.crawlDelay = undefined
             this.rules = []
         }
 
@@ -172,7 +211,7 @@ describe("Check rules match", function () {
     Disallow: /`
 
         const r = robotstxt(rules)
-        const ua = r.getUserAgent("*")
+        const ua = r.getGroup("*")
 
         assert(Array.isArray(ua.getRules()), "Should return an array of rules")
         assert.strictEqual(ua.getRules().length, 2, "Should have 2 rules")
@@ -186,7 +225,7 @@ describe("Check rules match", function () {
         assert.deepEqual(ua.getRules()[0], new Rule("allow", "/p"), "First rule should match")
         assert.deepEqual(ua.getRules()[1], new Rule("disallow", "/"), "Second rule should match")
 
-        assert.strictEqual(r.getUserAgent("Googlebot"), null, "Should return undefined for non-existent UA")
+        assert.strictEqual(r.getGroup("Googlebot"), undefined, "Should return undefined for non-existent UA")
     })
 })
 

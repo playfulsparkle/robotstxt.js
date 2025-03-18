@@ -10,18 +10,35 @@
 
 <body>
     <script>
-        const r = robotstxt(`User-Agent: GoogleBot
-        Allow: /
-        Disallow: /
-        Crawl-Delay: 10
-        Sitemap: https://mywebsite.com/sitemap.xml`); // Returns RobotsTxtParser
-        console.log(r.isAllowed("/my-path", "GoogleBot")); // Returns true
-        console.log(r.isDisallowed("/my-path", "GoogleBot")); // Returns false
-        const ua = r.getUserAgent("GoogleBot");
-        console.log(ua.getName()); // Returns GoogleBot
-        console.log(ua.getCrawlDelay()); // Returns 10
-        console.log(ua.getRules()); // Returns Rule[]
-        console.log(r.getSitemaps()); // Returns array of sitemap URLs
+        // Parse robots.txt content
+        const robotsTxtContent = `
+User-Agent: GoogleBot
+Allow: /public
+Disallow: /private
+Crawl-Delay: 5
+Sitemap: https://example.com/sitemap.xml
+`;
+
+        const parser = robotstxt(robotsTxtContent);
+
+        // Check URL permissions
+        console.log(parser.isAllowed("/public/data", "GoogleBot"));  // true
+        console.log(parser.isDisallowed("/private/admin", "GoogleBot")); // true
+
+        // Get specific user agent group
+        const googleBotGroup = parser.getGroup("googlebot"); // Case-insensitive
+        if (googleBotGroup) {
+            console.log("Crawl Delay:", googleBotGroup.getCrawlDelay()); // 5
+            console.log("Rules:", googleBotGroup.getRules().map(rule =>
+                `${rule.type}: ${rule.path}`
+            )); // ["allow: /public", "disallow: /private"]
+        }
+
+        // Get all sitemaps
+        console.log("Sitemaps:", parser.getSitemaps()); // ["https://example.com/sitemap.xml"]
+
+        // Check default rules (wildcard *)
+        console.log(parser.isAllowed("/protected", "*")); // true (if no wildcard rules exist)
     </script>
 </body>
 

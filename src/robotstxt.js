@@ -31,8 +31,8 @@
         constructor(userAgent) {
             /** @member {string} */
             this.userAgent = userAgent
-            /** @member {number|null} */
-            this.crawlDelay = null
+            /** @member {number|undefined} */
+            this.crawlDelay = undefined
             /** @member {Rule[]} */
             this.rules = []
         }
@@ -47,7 +47,7 @@
 
         /**
          * Get crawl delay setting for this group
-         * @return {number|null}
+         * @return {number|undefined}
          */
         getCrawlDelay() {
             return this.crawlDelay
@@ -83,6 +83,8 @@
          * @param {string} path - URL path pattern
          */
         addRule(type, path) {
+            if (typeof type === 'undefined') throw new Error("The 'type' parameter is required.")
+            if (typeof path === 'undefined') throw new Error("The 'path' parameter is required.")
             this.rules.push(new Rule(type, path))
         }
     }
@@ -99,11 +101,19 @@
             /**
              * @private
              * @member {Object}
+             * @property {Group[]} groups - Array of user agent groups/rules
+             * @property {string[]} sitemaps - Array of sitemap URLs found in robots.txt
              */
             this.parsedData = {
                 groups: [],
                 sitemaps: []
             }
+
+            /**
+             * @private
+             * @member {Object}
+             */
+            this.pathMatchesCache = {}
 
             this.parse(content)
         }
@@ -114,13 +124,17 @@
          * @param {string} content - Raw robots.txt content
          */
         parse(content) {
+            if (typeof content === 'undefined') throw new Error("The 'content' parameter is required.")
+
             const new_content = []
 
             // Preprocess lines: trim, remove comments, and split directives
-            for (const line of content.split("\n")) {
+            for (const line of content.split(/\r\n|\r|\n/)) {
                 let processedLine = line.trim()
+
                 const commentIndex = processedLine.indexOf("#")
 
+                // Remove comments
                 if (commentIndex !== -1) {
                     processedLine = processedLine.slice(0, commentIndex).trim()
                 }
@@ -128,6 +142,7 @@
                 if (!processedLine) continue
 
                 const colonIndex = processedLine.indexOf(":")
+
                 if (colonIndex === -1) continue
 
                 const directive = processedLine.slice(0, colonIndex).trim().toLowerCase()
@@ -146,7 +161,7 @@
             let user_agent_list = []
             let same_ua = false
             /** @type {Object.<string, Group>} */
-            const groups = {}
+            const temp_groups = {}
 
             // Process each directive and build rule groups
             for (let index = 0; index < new_content.length; index++) {
@@ -155,24 +170,30 @@
 
                 if (current.directive === "user-agent") {
                     user_agent_list.push(current.value)
-                    if (!groups[current.value]) {
-                        groups[current.value] = new Group(current.value)
+
+                    if (!temp_groups[current.value]) {
+                        temp_groups[current.value] = new Group(current.value)
                     }
                 }
                 else if (current.directive === "allow") {
-                    user_agent_list.forEach(agent => groups[agent].allow(current.value))
+                    user_agent_list.forEach(agent => temp_groups[agent].allow(current.value))
                     same_ua = true
                 }
                 else if (current.directive === "disallow") {
-                    user_agent_list.forEach(agent => groups[agent].disallow(current.value))
+                    user_agent_list.forEach(agent => temp_groups[agent].disallow(current.value))
                     same_ua = true
                 }
                 else if (current.directive === "crawl-delay") {
-                    const crawlDelay = parseFloat(current.value)
+                    const crawlDelay = current.value * 1
+
                     if (!isNaN(crawlDelay)) {
+                        if (crawlDelay <= 0) {
+                            throw new Error(`Crawl-Delay must be a positive number. The provided value is ${crawlDelay}.`)
+                        }
+
                         user_agent_list.forEach(agent => {
-                            if (!groups[agent].crawlDelay) {
-                                groups[agent].crawlDelay = crawlDelay
+                            if (!temp_groups[agent].crawlDelay) {
+                                temp_groups[agent].crawlDelay = crawlDelay
                             }
                         })
                     }
@@ -189,16 +210,19 @@
                 }
             }
 
-            this.parsedData.groups = Object.values(groups)
+            this.parsedData.groups = Object.keys(temp_groups).map(key => temp_groups[key])
         }
 
         /**
          * Check if a URL is allowed for specified user agent
          * @param {string} url - URL to check
-         * @param {string} [userAgent="*"] - User agent to check rules for
+         * @param {string} userAgent - User agent to check rules for
          * @return {boolean} - True if allowed, false if disallowed
          */
-        isAllowed(url, userAgent = "*") {
+        isAllowed(url, userAgent) {
+            if (typeof url === 'undefined') throw new Error("The 'url' parameter is required.")
+            if (typeof userAgent === 'undefined') throw new Error("The 'userAgent' parameter is required.")
+
             const rules = this.getApplicableRules(userAgent)
             const urlPath = this.normalizeUrlPath(url)
             const matchingRules = []
@@ -228,10 +252,10 @@
         /**
          * Check if a URL is disallowed for specified user agent
          * @param {string} url - URL to check
-         * @param {string} [userAgent="*"] - User agent to check rules for
+         * @param {string} userAgent - User agent to check rules for
          * @return {boolean} - True if disallowed, false if allowed
          */
-        isDisallowed(url, userAgent = "*") {
+        isDisallowed(url, userAgent) {
             return !this.isAllowed(url, userAgent)
         }
 
@@ -247,12 +271,18 @@
          * Get group for specific user agent
          * @private
          * @param {string} userAgent - User agent to search for
-         * @return {Group|null} - Matching group or null
+         * @return {Group|undefined} - Matching group or undefined
          */
-        getUserAgent(userAgent = "*") {
-            return this.parsedData.groups.find(
-                g => g.userAgent.toLowerCase() === userAgent.toLowerCase()
-            ) || null
+        getGroup(userAgent) {
+            if (!userAgent) return undefined
+            for (let i = 0; i < this.parsedData.groups.length; i++) {
+                const group = this.parsedData.groups[i]
+
+                if (group.userAgent.toLowerCase() === userAgent.toLowerCase()) {
+                    return group
+                }
+            }
+            return undefined
         }
 
         /**
@@ -263,8 +293,8 @@
          */
         getRuleSpecificity(path) {
             let specificity = path.length
-            if (path.includes("*")) specificity -= 0.5
-            else if (path.endsWith("$")) specificity += 0.5
+            if (path.indexOf("*") !== -1) specificity -= 0.5
+            else if (path.slice(-1) === "$") specificity += 0.5
             return specificity
         }
 
@@ -275,11 +305,9 @@
          * @return {Group[]} - Array of matching groups
          */
         getApplicableGroups(userAgent) {
-            const exactGroups = this.parsedData.groups.filter(
-                g => g.userAgent.toLowerCase() === userAgent.toLowerCase()
-            )
-            return exactGroups.length > 0 ? exactGroups :
-                this.parsedData.groups.filter(g => g.userAgent === "*")
+            const exactGroups = this.parsedData.groups.filter(group => group.getName().toLowerCase() === userAgent.toLowerCase())
+            if (exactGroups.length > 0) return exactGroups
+            return this.parsedData.groups.filter(group => group.getName() === "*")
         }
 
         /**
@@ -289,7 +317,8 @@
          * @return {Rule[]} - Array of applicable rules
          */
         getApplicableRules(userAgent) {
-            return this.getApplicableGroups(userAgent).flatMap(g => g.getRules())
+            const rules = this.getApplicableGroups(userAgent)
+            return rules.reduce((acc, group) => acc.concat(group.getRules()), [])
         }
 
         /**
@@ -301,7 +330,7 @@
         normalizeUrlPath(url) {
             try {
                 return this.normalizePath(new URL(url).pathname)
-            } catch {
+            } catch (error) {
                 return this.normalizePath(url)
             }
         }
@@ -314,12 +343,19 @@
          * @return {boolean} - True if path matches pattern
          */
         pathMatches(rulePath, urlPath) {
+            const cacheKey = `${rulePath}__${urlPath}`
+            if (this.pathMatchesCache.hasOwnProperty(cacheKey)) {
+                return this.pathMatchesCache[cacheKey]
+            }
+
             const normalizedRule = this.normalizePath(rulePath)
             let regexPattern = normalizedRule
                 .replace(/[.^+?(){}[\]|\\]/gu, "\\$&")
                 .replace(/\*/gu, ".*")
 
-            return new RegExp(`^${regexPattern}`, "u").test(urlPath)
+            const result = new RegExp(`^${regexPattern}`, "u").test(urlPath)
+            this.pathMatchesCache[cacheKey] = result
+            return result
         }
 
         /**
@@ -330,8 +366,9 @@
          */
         normalizePath(path) {
             const decoded = decodeURIComponent(path)
-            const singleSlash = decoded.replace(/\/+/g, "/")
-            return singleSlash.startsWith("/") ? singleSlash : `/${singleSlash}`
+            const singleSlash = decoded.replace(/\/+/gu, "/")
+            if (singleSlash[0] === "/") return singleSlash
+            return `/${singleSlash}`
         }
     }
 
@@ -356,4 +393,4 @@
         }
     }
     /* eslint-enable quote-props */
-}();
+}()
