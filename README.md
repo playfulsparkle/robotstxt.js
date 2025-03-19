@@ -10,7 +10,7 @@
 - Sitemap discovery
 - Case-insensitive user-agent matching
 - Efficient path matching algorithms
-- Small footprint (< 3 KB minified+gzipped)
+- Small footprint (< 4 KB minified+gzipped)
 
 ## Usage
 
@@ -67,29 +67,34 @@ npm i @playfulsparkle/robotstxt-js
 bower install playfulsparkle/robotstxt.js
 ```
 
-## API
+# API Documentation
 
-### Core Methods
+## Core Methods
 
-`robotstxt(content: string): RobotsTxtParser`
-Creates a new parser instance with the provided robots.txt content
+- `robotstxt(content: string): RobotsTxtParser` - Creates a new parser instance with the provided `robots.txt` content.
+- `isAllowed(url: string, userAgent: string): boolean` - Check if a URL is allowed for the specified user agent (throws if parameters are missing).
+- `isDisallowed(url: string, userAgent: string): boolean` - Check if a URL is disallowed for the specified user agent (throws if parameters are missing).
+- `getGroup(userAgent: string): Group | undefined` - Get the rules group for a specific user agent (case-insensitive match).
+- `getSitemaps(): string[]` - Get an array of discovered sitemap URLs from Sitemap directives.
+- `getCleanParams(): string[]` - Retrieve Clean-param directives for URL parameter sanitization.
+- `getHost(): string | undefined` - Get canonical host declaration for domain normalization.
 
-`isAllowed(url: string, userAgent: string): boolean`
-Check if a URL is allowed for specified user agent
+## Group Methods (via `getGroup()` result)
 
-`isDisallowed(url: string, userAgent: string): boolean`
-Check if a URL is disallowed for specified user agent
+### User Agent Info
+- `getName(): string` - User agent name for this group.
+- `getComment(): string[]` - Associated comment from the Comment directive.
+- `getRobotVersion(): string | undefined` - Robots.txt specification version.
+- `getVisitTime(): string | undefined` - Recommended crawl time window.
 
-`getGroup(userAgent: string): Group | undefined`
-Get the rules group for specific user agent
+### Crawl Management
+- `getCacheDelay(): number | undefined` - Cache delay in seconds.
+- `getCrawlDelay(): number | undefined` - Crawl delay in seconds.
+- `getRequestRates(): string[]` - Request rate limitations.
 
-`getSitemaps(): string[]`
-Get array of discovered sitemap URLs
-
-### Group Methods (via getGroup() result)
-`getName(): string` - Get user agent name for this group
-`getCrawlDelay(): number | undefined` - Get crawl delay in seconds
-`getRules(): Rule[]` - Get all rules for this group
+### Rule Access
+- `getRules(): Rule[]` - All rules (allow/disallow/noindex) for this group.
+- `addRule(type: string, path: string): void` - Add rule (throws if type missing, throws if path missing).
 
 ## Specification Support
 
@@ -109,21 +114,31 @@ Get array of discovered sitemap URLs
 
 ### Node.js
 
-`robotstxt.js` runs in all active Node versions (4.x+).
+`robotstxt.js` runs in all active Node versions (6.x+).
 
 ### Browser Support
 
-This library is written using modern JavaScript (ES6/ES2015) features. It is expected to work in the following browser versions and later:
+This library is written using modern JavaScript ES2015 (ES6) features. It is expected to work in the following browser versions and later:
 
-| Browser         | Version |
-|-----------------|---------|
-| Chrome          | 49      |
-| Firefox         | 45      |
-| Safari          | 9       |
-| Edge            | 13      |
-| Mobile Chrome   | 49      |
-| iOS Safari      | 9       |
-| Node.js         | 4.0.0   |
+| Browser                  | Minimum Supported Version |
+|--------------------------|---------------------------|
+| **Desktop Browsers**     |                           |
+| Chrome                   | 19                        |
+| Edge                     | 12                        |
+| Firefox                  | 26                        |
+| Opera                    | 15                        |
+| Safari                   | 14.1                      |
+| **Mobile Browsers**      |                           |
+| Chrome Android           | 25                        |
+| Firefox for Android      | 26                        |
+| Opera Android            | 14                        |
+| Safari on iOS            | 14.5                      |
+| Samsung Internet         | 1.5                       |
+| WebView Android          | 4.4                       |
+| WebView on iOS           | 14.5                      |
+| **Other**                |                           |
+| Node.js                  | 6.13.0                    |
+
 
 ## Performance
 

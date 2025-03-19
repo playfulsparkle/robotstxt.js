@@ -23,6 +23,66 @@ Crawl-Delay: 10 #Comment after Crawl-Delay`
     })
 })
 
+describe("Core Method tests", function () {
+    it("should clean params match", function () {
+        const content = `User-agent: * #specifies the robots that the directives are set for
+Disallow: /bin/ # prohibits links from the Shopping Cart.
+Disallow: /search/ #  prohibits page links of the search embedded on the website
+Disallow: /admin/ # prohibits links from the admin panel
+Sitemap: http://example.com/sitemap # specifies the path to the website's Sitemap file for the robot
+Clean-param: ref /some_dir/get_book.php`
+        const r = robotstxt(content)
+
+        assert.deepStrictEqual(r.getCleanParams("*"), ["ref /some_dir/get_book.php"])
+    })
+})
+
+describe("User Agent Info tests", function () {
+    it("should handle return both User-Agent comment", function () {
+        const content = `User-agent: vacuumweb
+Comment: because you guys try all the time, I'm gonna limit you
+Comment: to how many documents you can retrieve.  So there!
+Allow: *.html
+Disallow: *`
+        const r = robotstxt(content)
+
+        assert.deepStrictEqual(r.getGroup("vacuumweb").getComment(), ["because you guys try all the time, I'm gonna limit you", "to how many documents you can retrieve.  So there!"])
+    })
+
+    it("should handle return User-Agent Robot-Version", function () {
+        const content = `User-agent: vacuumweb
+Robot-version: 2.0.0
+Allow: *.html
+Disallow: *`
+        const r = robotstxt(content)
+
+        assert.strictEqual(r.getGroup("vacuumweb").getRobotVersion(), "2.0.0")
+    })
+
+    it("should handle return User-Agent Request-rate", function () {
+        const content = `User-agent: vacuumweb
+Request-rate: 1/10m 1300-1659		# 8:00 am to noon EST
+Request-rate: 1/20m 1700-0459		# noon to 11:59 pm EST
+Request-rate: 5/1m  0500-1259		# midnight to 7:59 am EST
+Allow: *.html
+Disallow: *`
+        const r = robotstxt(content)
+
+        assert.deepStrictEqual(r.getGroup("vacuumweb").getRequestRates(), ["1/10m 1300-1659", "1/20m 1700-0459", "5/1m  0500-1259"])
+    })
+
+    it("should handle return User-Agent Visit-time", function () {
+        const content = `User-agent: vacuumweb
+Robot-version: 2.0.0 2.0
+Allow: *.html			# only allow HTML pages
+Disallow: *			# and nothing else
+Visit-time: 0600-0845		# and then only between 1 am to 3:45 am EST`
+        const r = robotstxt(content)
+
+        assert.strictEqual(r.getGroup("vacuumweb").getVisitTime(), "0600-0845")
+    })
+})
+
 describe("EOL handling", function () {
     it("should handle LF (Unix) EOLs", function () {
         const content = "User-agent: *\nDisallow: /"
@@ -151,12 +211,128 @@ Sitemap: http://example.com/sitemap2.xml`
     })
 })
 
+describe("Cache-delay", function () {
+    it("should log an error if Cache-delay is not a number", function () {
+        const rules = `User-agent: *
+    Cache-delay: test`
+
+        const originalError = console.error
+        let errorMessage = ""
+
+        // Mock console.error
+        console.error = msg => errorMessage = msg
+
+        // Execute parsing
+        robotstxt(rules)
+
+        // Restore console.error
+        console.error = originalError
+
+        assert.match(errorMessage, /Invalid Cache\-delay value: test is not a number\./, "Console error should indicate Cache-delay is not a number")
+    })
+
+    it("should log an error if Cache-delay is 0 during parsing", function () {
+        const rules = `User-agent: *
+    Cache-delay: 0`
+
+        const originalError = console.error
+        let errorMessage = ""
+
+        // Mock console.error
+        console.error = msg => errorMessage = msg
+
+        // Execute parsing
+        robotstxt(rules)
+
+        // Restore console.error
+        console.error = originalError
+
+        assert.match(errorMessage, /Cache\-delay must be a positive number. The provided value is 0\./, "Console error should indicate Cache-delay not a positive number")
+    })
+
+    it("should return the correct cache delay", function () {
+        const rules = `User-agent: *
+Cache-delay: 10`
+        const r = robotstxt(rules)
+        const ua = r.getGroup("*")
+
+        assert.strictEqual(ua.getCacheDelay(), 10, "Cache delay should be 10")
+    })
+
+    it("should return undefined if no cache delay is defined", function () {
+        const rules = `User-agent: *`
+        const r = robotstxt(rules)
+        const ua = r.getGroup("*")
+
+        assert.strictEqual(ua.getCacheDelay(), undefined, "Cache delay should be undefined")
+    })
+
+    it("should return the correct cache delay for multiple user agents", function () {
+        const rules = `User-agent: Googlebot
+Cache-delay: 5
+
+User-agent: Bingbot
+Cache-delay: 15`
+        const r = robotstxt(rules)
+        const googlebot = r.getGroup("Googlebot")
+        const bingbot = r.getGroup("Bingbot")
+
+        assert.strictEqual(googlebot.getCacheDelay(), 5, "Googlebot cache delay should be 5")
+        assert.strictEqual(bingbot.getCacheDelay(), 15, "Bingbot cache delay should be 15")
+    })
+
+    it("should return the correct cache delay for wildcard user agent", function () {
+        const rules = `User-agent: *
+Cache-delay: 20
+
+User-agent: Googlebot
+Cache-delay: 5`
+        const r = robotstxt(rules)
+        const wildcard = r.getGroup("*")
+        const googlebot = r.getGroup("Googlebot")
+
+        assert.strictEqual(wildcard.getCacheDelay(), 20, "Wildcard cache delay should be 20")
+        assert.strictEqual(googlebot.getCacheDelay(), 5, "Googlebot cache delay should be 5")
+    })
+})
+
 describe("Crawl-Delay", function () {
-    it("should throw an error if Crawl-Delay is 0 during parsing", function () {
+    it("should log an error if Crawl-Delay is not a number", function () {
+        const rules = `User-agent: *
+    Crawl-Delay: test`
+
+        const originalError = console.error
+        let errorMessage = ""
+
+        // Mock console.error
+        console.error = msg => errorMessage = msg
+
+        // Execute parsing
+        robotstxt(rules)
+
+        // Restore console.error
+        console.error = originalError
+
+        assert.match(errorMessage, /Invalid Crawl\-Delay value: test is not a number\./, "Console error should indicate Crawl-Delay is not a number")
+    })
+
+    it("should log an error if Crawl-Delay is 0 during parsing", function () {
         const rules = `User-agent: *
     Crawl-Delay: 0`
 
-        assert.throws(() => robotstxt(rules), /Crawl-Delay must be a positive number\. The provided value is 0\./, "Error message should indicate invalid Crawl-Delay of 0")
+        const originalError = console.error
+        let errorMessage = ""
+
+        // Mock console.error
+        console.error = msg => errorMessage = msg
+
+        // Execute parsing
+        robotstxt(rules)
+
+        // Restore console.error
+        console.error = originalError
+
+        assert.match(errorMessage, /Crawl\-Delay must be a positive number\. The provided value is 0\./, "Console error should indicate Crawl-Delay not a positive number")
     })
 
     it("should return the correct crawl delay", function () {
@@ -213,10 +389,15 @@ describe("Check rules match", function () {
             this.regex = this.createRegex(path)
         }
 
+        match(path) {
+            return this.regex.test(path)
+        }
+
         createRegex(path) {
             const pattern = path
                 .replace(/[.^+?(){}[\]|\\]/gu, "\\$&")
                 .replace(/\*/gu, ".*?")
+
             return new RegExp(`^${pattern}`, "u")
         }
     }
@@ -225,11 +406,36 @@ describe("Check rules match", function () {
         constructor(userAgent) {
             this.userAgent = userAgent
             this.crawlDelay = undefined
+            this.cacheDelay = undefined
             this.rules = []
+            this.comment = []
+            this.robotVersion = undefined
+            this.visitTime = undefined
+            this.requestRates = []
         }
 
         getName() {
             return this.userAgent
+        }
+
+        getComment() {
+            return this.comment
+        }
+
+        getRobotVersion() {
+            return this.robotVersion
+        }
+
+        getVisitTime() {
+            return this.visitTime
+        }
+
+        getRequestRates() {
+            return this.requestRates
+        }
+
+        getCacheDelay() {
+            return this.cacheDelay
         }
 
         getCrawlDelay() {
@@ -240,15 +446,9 @@ describe("Check rules match", function () {
             return this.rules
         }
 
-        allow(path) {
-            this.addRule("allow", path)
-        }
-
-        disallow(path) {
-            this.addRule("disallow", path)
-        }
-
         addRule(type, path) {
+            if (typeof type === "undefined") throw new Error("The 'type' parameter is required.")
+            if (typeof path === "undefined") throw new Error("The 'path' parameter is required.")
             this.rules.push(new Rule(type, path))
         }
     }
@@ -266,8 +466,8 @@ describe("Check rules match", function () {
 
 
         const expectedGroup = new Group("*")
-        expectedGroup.allow("/p")
-        expectedGroup.disallow("/")
+        expectedGroup.addRule("allow", "/p")
+        expectedGroup.addRule("disallow", "/")
 
         assert.deepEqual(ua, expectedGroup, "Wildcard group should match expected structure")
         assert.deepEqual(ua.getRules()[0], new Rule("allow", "/p"), "First rule should match")

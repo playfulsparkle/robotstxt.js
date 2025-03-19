@@ -9,7 +9,7 @@
     class Rule {
         /**
          * Create a new rule instance
-         * @param {string} type - Rule type ('allow' or 'disallow')
+         * @param {string} type - Rule type ('allow', 'disallow' or 'noindex')
          * @param {string} path - URL path pattern the rule applies to
          */
         constructor(type, path) {
@@ -54,25 +54,75 @@
          * @param {string} userAgent - User agent string this group applies to
          */
         constructor(userAgent) {
-            /** @member {string} */
+            /** @member {string} - User agent identifier for this group */
             this.userAgent = userAgent
-            /** @member {number|undefined} */
+            /** @member {number|undefined} - Delay between crawler requests in seconds */
             this.crawlDelay = undefined
-            /** @member {Rule[]} */
+            /** @member {number|undefined} - Specifies the minimum interval for a robot to wait after caching one page, before starting to cache another in seconds */
+            this.cacheDelay = undefined
+            /** @member {Rule[]} - Collection of rules for this user agent */
             this.rules = []
+            /** @member {string} - Optional comment associated with the group */
+            this.comment = []
+            /** @member {string|undefined} - Version of robots.txt specification used */
+            this.robotVersion = undefined
+            /** @member {string|undefined} - Recommended visit time from robots.txt */
+            this.visitTime = undefined
+            /** @member {string[]} - Request rate limits for this user agent */
+            this.requestRates = []
         }
 
         /**
          * Get the user agent name for this group
-         * @return {string}
+         * @return {string} User agent identifier
          */
         getName() {
             return this.userAgent
         }
 
         /**
+         * Get the comment associated with this group
+         * @return {string[]} Group comment if available
+         */
+        getComment() {
+            return this.comment
+        }
+
+        /**
+         * Get the robots.txt specification version
+         * @return {string|undefined} Version number of robots.txt specification
+         */
+        getRobotVersion() {
+            return this.robotVersion
+        }
+
+        /**
+         * Get the recommended visit time for crawler
+         * @return {string|undefined} Suggested crawl time window
+         */
+        getVisitTime() {
+            return this.visitTime
+        }
+
+        /**
+         * Get request rate limitations for this group
+         * @return {string[]} Array of request rate rules
+         */
+        getRequestRates() {
+            return this.requestRates
+        }
+
+        /**
          * Get crawl delay setting for this group
-         * @return {number|undefined}
+         * @return {number|undefined} Delay between requests in seconds
+         */
+        getCacheDelay() {
+            return this.cacheDelay
+        }
+
+        /**
+         * Get crawl delay setting for this group
+         * @return {number|undefined} Delay between requests in seconds
          */
         getCrawlDelay() {
             return this.crawlDelay
@@ -80,37 +130,20 @@
 
         /**
          * Get all rules for this group
-         * @return {Rule[]}
+         * @return {Rule[]} Array of rule objects
          */
         getRules() {
             return this.rules
         }
 
         /**
-         * Add an allow rule to the group
-         * @param {string} path - URL path pattern to allow
-         */
-        allow(path) {
-            if (typeof path === "undefined") throw new Error("The 'path' parameter is required.")
-            this.addRule("allow", path)
-        }
-
-        /**
-         * Add a disallow rule to the group
-         * @param {string} path - URL path pattern to disallow
-         */
-        disallow(path) {
-            if (typeof path === "undefined") throw new Error("The 'path' parameter is required.")
-            this.addRule("disallow", path)
-        }
-
-        /**
          * Internal method to add a rule
-         * @private
-         * @param {string} type - Rule type ('allow' or 'disallow')
+         * @param {string} type - Rule type ('allow', 'disallow', 'noindex')
          * @param {string} path - URL path pattern
          */
         addRule(type, path) {
+            if (typeof type === "undefined") throw new Error("The 'type' parameter is required.")
+            if (typeof path === "undefined") throw new Error("The 'path' parameter is required.")
             this.rules.push(new Rule(type, path))
         }
     }
@@ -140,6 +173,27 @@
              */
             this.sitemaps = []
 
+            /**
+             * @private
+             * @type {string[]}
+             * @description Collection of Clean-param directive values specifying
+             *              dynamic parameters that should be ignored during URL
+             *              canonicalization. These typically include tracking
+             *              parameters, session IDs, or other URL-specific values
+             *              that don't affect content.
+             */
+            this.cleanParam = []
+
+            /**
+             * @private
+             * @type {string|undefined}
+             * @description Preferred canonical host declaration from Host directive, used to:
+            *                 - Specify the primary domain when multiple mirrors exist
+            *                 - Handle internationalization/country targeting (ccTLDs)
+            *                 - Enforce consistent domain (with/without www) for search engines
+             */
+            this.host = undefined
+
             this.parse(content)
         }
 
@@ -158,10 +212,10 @@
                 /** @type {string} */
                 let processedLine = line.trim()
 
-                if (!processedLine || processedLine.startsWith('#')) continue
+                if (!processedLine || processedLine[0] === "#") continue
 
                 /** @type {number} */
-                const colonIndex = processedLine.indexOf(':')
+                const colonIndex = processedLine.indexOf(":")
                 if (colonIndex === -1) continue
 
                 /** @type {string} */
@@ -189,19 +243,33 @@
             /** @type {Object.<string, Group>} */
             const tempGroups = {}
 
+            /** @type {string} - Array of directives which require at least one User-Agent present. */
+            const uaDirectives = [
+                "allow",
+                "disallow",
+                "noindex",
+                "comment",
+                "robot-version",
+                "request-rate",
+                "visit-time",
+                "cache-delay",
+                "crawl-delay"
+            ]
+
             // Process each directive and build rule groups
             for (let index = 0; index < normalizedContent.length; index++) {
                 /** @type {Object.<string, string>} */
                 const currentLine = normalizedContent[index]
 
-                const needsDefaultUa = ["allow", "disallow", "crawl-delay"].includes(currentLine.directive) && !userAgentSeen
+                /** @type {boolean} */
+                const needsDefaultUa = uaDirectives.indexOf(currentLine.directive) !== -1 && !userAgentSeen
 
                 if (currentLine.directive === "user-agent" || needsDefaultUa) {
                     userAgentSeen = true
 
                     const uaName = needsDefaultUa ? "*" : currentLine.value
 
-                    if (!userAgentList.includes(uaName)) {
+                    if (!userAgentList.indexOf(uaName) !== -1) {
                         userAgentList.push(uaName)
                     }
 
@@ -212,21 +280,46 @@
 
                 if (currentLine.directive === "allow") {
                     const normalizedPath = this.normalizePath(currentLine.value)
-                    userAgentList.forEach(agent => tempGroups[agent].allow(normalizedPath))
+                    userAgentList.forEach(agent => tempGroups[agent].addRule("allow", normalizedPath))
                     sameUserAgent = true
                 }
                 else if (currentLine.directive === "disallow") {
                     const normalizedPath = this.normalizePath(currentLine.value)
-                    userAgentList.forEach(agent => tempGroups[agent].disallow(normalizedPath))
+                    userAgentList.forEach(agent => tempGroups[agent].addRule("disallow", normalizedPath))
+                    sameUserAgent = true
+                }
+                else if (currentLine.directive === "noindex") {
+                    const normalizedPath = this.normalizePath(currentLine.value)
+                    userAgentList.forEach(agent => tempGroups[agent].addRule("noindex", normalizedPath))
+                    sameUserAgent = true
+                }
+                else if (currentLine.directive === "cache-delay") {
+                    const cacheDelay = currentLine.value * 1
+
+                    if (isNaN(cacheDelay)) {
+                        console.error(`Invalid Cache-delay value: ${currentLine.value} is not a number.`)
+                        continue
+                    } else if (cacheDelay <= 0) {
+                        console.error(`Cache-delay must be a positive number. The provided value is ${cacheDelay}.`)
+                        continue
+                    }
+
+                    userAgentList.forEach(agent => {
+                        if (!tempGroups[agent].cacheDelay) {
+                            tempGroups[agent].cacheDelay = cacheDelay
+                        }
+                    })
                     sameUserAgent = true
                 }
                 else if (currentLine.directive === "crawl-delay") {
                     const crawlDelay = currentLine.value * 1
 
-                    if (isNaN(crawlDelay)) continue
-
-                    if (crawlDelay <= 0) {
-                        throw new Error(`Crawl-Delay must be a positive number. The provided value is ${crawlDelay}.`)
+                    if (isNaN(crawlDelay)) {
+                        console.error(`Invalid Crawl-Delay value: ${currentLine.value} is not a number.`)
+                        continue
+                    } else if (crawlDelay <= 0) {
+                        console.error(`Crawl-Delay must be a positive number. The provided value is ${crawlDelay}.`)
+                        continue
                     }
 
                     userAgentList.forEach(agent => {
@@ -236,8 +329,34 @@
                     })
                     sameUserAgent = true
                 }
+                else if (currentLine.directive === "comment") {
+                    userAgentList.forEach(agent => tempGroups[agent].comment.push(currentLine.value))
+                    sameUserAgent = true
+                }
+                else if (currentLine.directive === "robot-version") {
+                    if (!/^(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z]+(?:\.\d+)?))?$/u.test(currentLine.value)) {
+                        console.error(`Invalid Robot-Version value: ${currentLine.value} does not match semantic versioning format.`)
+                        continue
+                    }
+                    userAgentList.forEach(agent => tempGroups[agent].robotVersion = currentLine.value)
+                    sameUserAgent = true
+                }
+                else if (currentLine.directive === "request-rate") {
+                    userAgentList.forEach(agent => tempGroups[agent].requestRates.push(currentLine.value))
+                    sameUserAgent = true
+                }
+                else if (currentLine.directive === "visit-time") {
+                    userAgentList.forEach(agent => tempGroups[agent].visitTime = currentLine.value)
+                    sameUserAgent = true
+                }
                 else if (currentLine.directive === "sitemap") {
                     this.sitemaps.push(currentLine.value)
+                }
+                else if (currentLine.directive === "clean-param") {
+                    this.cleanParam.push(currentLine.value)
+                }
+                else if (currentLine.directive === "host") {
+                    this.host = currentLine.value
                 }
 
                 /** @type {Object.<string, string>} */
@@ -312,6 +431,27 @@
          */
         getSitemaps() {
             return this.sitemaps
+        }
+
+        /**
+         * Retrieve Clean-param directives for URL parameter sanitization
+         * @returns {string[]} Array of parameter patterns in Clean-param format:
+         *                         - Each entry follows "param[&param2] [path-prefix]" syntax
+         *                         - Path prefix is optional and specifies URL scope
+         */
+        getCleanParams() {
+            return this.cleanParam
+        }
+
+        /**
+         * Get canonical host declaration for domain normalization
+         * @returns {string|undefined} Preferred hostname in one of these formats:
+         *                        - Domain without protocol (e.g., "www.example.com")
+         *                        - Domain with port (e.g., "example.com:8080")
+         *                        - undefined if no Host directive declared
+         */
+        getHost() {
+            return this.host = undefined
         }
 
         /**
