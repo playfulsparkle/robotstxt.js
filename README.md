@@ -2,15 +2,21 @@
 
 **robotstxt.js** is a lightweight, compliant JavaScript parser for **robots.txt** files, working in both browsers and Node.js environments.
 
-## Features
-- Full compliance with Google"s robots.txt specification
-- Zero-dependency implementation
-- Support for wildcard patterns (`*`) and URL matching
-- Crawl-delay handling
-- Sitemap discovery
-- Case-insensitive user-agent matching
-- Efficient path matching algorithms
-- Small footprint (< 4 KB minified+gzipped)
+# Directives
+
+- **Clean-param**
+- **Host**
+- **Sitemap**
+- **User-agent**
+  - Allow
+  - Disallow
+  - Crawl-delay
+  - Cache-delay
+  - Comment
+  - NoIndex
+  - Request-rate
+  - Robot-version
+  - Visit-time
 
 ## Usage
 
@@ -139,27 +145,23 @@ This library is written using modern JavaScript ES2015 (ES6) features. It is exp
 | **Other**                |                           |
 | Node.js                  | 6.13.0                    |
 
-
-## Performance
-
-Designed for high performance with:
-
-- Optimized parsing routines
-- Precompiled matching patterns
-- Efficient data structures
-- Lazy evaluation where possible
-
-Benchmarks show parsing of 10,000 rules in < 15ms on modern hardware.
+## Specifications
+- [Google robots.txt specifications](https://developers.google.com/webmasters/control-crawl-index/docs/robots_txt)
+- [Yandex robots.txt specifications](https://yandex.com/support/webmaster/controlling-robot/robots-txt.xml)
+- [W3C Recommendation HTML 4.01 specification](https://www.w3.org/TR/html4/appendix/notes.html#h-B.4.1.1)
+- [Sitemaps.org protocol](http://www.sitemaps.org/protocol.html#submit_robots)
+- [Sean Conner: _"An Extended Standard for Robot Exclusion"_](http://www.conman.org/people/spc/robots2.html)
+- [Martijn Koster: _"A Method for Web Robots Control"_](http://www.robotstxt.org/norobots-rfc.txt)
+- [Martijn Koster: _"A Standard for Robot Exclusion"_](http://www.robotstxt.org/orig.html)
+- [RFC 7231](https://tools.ietf.org/html/rfc7231)
+- [RFC 7230](https://tools.ietf.org/html/rfc7230)
+- [RFC 5322](https://tools.ietf.org/html/rfc5322)
+- [RFC 3986](https://tools.ietf.org/html/rfc3986)
+- [RFC 1945](https://tools.ietf.org/html/rfc1945)
+- [RFC 1738](https://tools.ietf.org/html/rfc1738)
+- [RFC 952](https://tools.ietf.org/html/rfc952)
 
 ## License
 
 **robotstxt.js** is licensed under the terms of the BSD 3-Clause License.
 
-## Contributing
-
-Pull requests and issues welcome! Please follow:
-
-1. Fork repository
-2. Create feature branch
-3. Add tests for new functionality
-4. Submit PR
