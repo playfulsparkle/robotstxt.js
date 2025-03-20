@@ -51,12 +51,12 @@ Disallow: *`;
 
     it('should handle return User-Agent Robot-Version', () => {
         const content = `User-agent: vacuumweb
-Robot-version: 2.0.0
+Robot-version: 2.0
 Allow: *.html
 Disallow: *`;
         const r = robotstxt(content);
 
-        assert.strictEqual(r.getGroup('vacuumweb').getRobotVersion(), '2.0.0');
+        assert.strictEqual(r.getGroup('vacuumweb').getRobotVersion(), '2.0');
     });
 
     it('should handle return User-Agent Robot-Version', () => {
@@ -103,7 +103,7 @@ Disallow: *`;
 
     it('should handle return User-Agent Visit-time', () => {
         const content = `User-agent: vacuumweb
-Robot-version: 2.0.0 2.0
+Robot-version: 2.0
 Allow: *.html			# only allow HTML pages
 Disallow: *			# and nothing else
 Visit-time: 0600-0845		# and then only between 1 am to 3:45 am EST`;
@@ -114,7 +114,7 @@ Visit-time: 0600-0845		# and then only between 1 am to 3:45 am EST`;
 
     it('should handle User-Agent invalid Visit-time', () => {
         const content = `User-agent: vacuumweb
-Robot-version: 2.0.0 2.0
+Robot-version: 2.0
 Allow: *.html			# only allow HTML pages
 Disallow: *			# and nothing else
 Visit-time: 2542-3199		# and then only between xxxxx`;
@@ -399,21 +399,21 @@ Crawl-Delay: 5`;
 describe('Check rules match', () => {
     class Rule {
         constructor(type, path) {
+            this.re = {
+                specialChars: /[.^+?(){}[\]|\\]/g,
+                nonGreedyWildcard: /\*/g
+            };
             this.type = type;
             this.path = path;
             this.regex = this.createRegex(path);
         }
 
-        match(path) {
-            return this.regex.test(path);
-        }
-
         createRegex(path) {
             const pattern = path
-                .replace(/[.^+?(){}[\]|\\]/gu, '\\$&')
-                .replace(/\*/gu, '.*?');
+                .replace(this.re.specialChars, '\\$&')
+                .replace(this.re.nonGreedyWildcard, '.*?');
 
-            return new RegExp(`^${pattern}`, 'u');
+            return new RegExp(`^${pattern}`);
         }
     }
 
@@ -427,38 +427,6 @@ describe('Check rules match', () => {
             this.robotVersion = undefined;
             this.visitTime = undefined;
             this.requestRates = [];
-        }
-
-        getName() {
-            return this.userAgent;
-        }
-
-        getComment() {
-            return this.comment;
-        }
-
-        getRobotVersion() {
-            return this.robotVersion;
-        }
-
-        getVisitTime() {
-            return this.visitTime;
-        }
-
-        getRequestRates() {
-            return this.requestRates;
-        }
-
-        getCacheDelay() {
-            return this.cacheDelay;
-        }
-
-        getCrawlDelay() {
-            return this.crawlDelay;
-        }
-
-        getRules() {
-            return this.rules;
         }
 
         addRule(type, path) {

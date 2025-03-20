@@ -130,18 +130,18 @@ This library is written using modern JavaScript ES2015 (ES6) features. It is exp
 | Browser                  | Minimum Supported Version |
 |--------------------------|---------------------------|
 | **Desktop Browsers**     |                           |
-| Chrome                   | 19                        |
-| Edge                     | 12                        |
-| Firefox                  | 26                        |
-| Opera                    | 15                        |
+| Chrome                   | 49                        |
+| Edge                     | 13                        |
+| Firefox                  | 45                        |
+| Opera                    | 36                        |
 | Safari                   | 14.1                      |
 | **Mobile Browsers**      |                           |
-| Chrome Android           | 25                        |
-| Firefox for Android      | 26                        |
-| Opera Android            | 14                        |
+| Chrome Android           | 49                        |
+| Firefox for Android      | 45                        |
+| Opera Android            | 36                        |
 | Safari on iOS            | 14.5                      |
-| Samsung Internet         | 1.5                       |
-| WebView Android          | 4.4                       |
+| Samsung Internet         | 5.0                       |
+| WebView Android          | 49                        |
 | WebView on iOS           | 14.5                      |
 | **Other**                |                           |
 | Node.js                  | 6.13.0                    |

@@ -13,6 +13,10 @@
          * @param {string} path - URL path pattern the rule applies to
          */
         constructor(type, path) {
+            this.re = {
+                specialChars: /[.^+?(){}[\]|\\]/g, // Escapes special chars
+                nonGreedyWildcard: /\*/g           // Replaces * with .*?
+            };
             /** @member {string} */
             this.type = type;
             /** @member {string} */
@@ -38,10 +42,10 @@
          */
         createRegex(path) {
             const pattern = path
-                .replace(/[.^+?(){}[\]|\\]/gu, '\\$&')  // Escape regex special characters
-                .replace(/\*/gu, '.*?');                // Replace * with non-greedy wildcard
+                .replace(this.re.specialChars, '\\$&')      // Escape regex special characters
+                .replace(this.re.nonGreedyWildcard, '.*?'); // Replace * with non-greedy wildcard
 
-            return new RegExp(`^${pattern}`, 'u');
+            return new RegExp(`^${pattern}`);
         }
     }
 
@@ -202,11 +206,12 @@
             this.reports = [];
 
             this.re = {
-                robotVersion: /^(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z]+(?:\.\d+)?))?$/u,
-                requestRate: /^\d+\/\d+[smh]?\s+(\d{4})-(\d{4})$/u,
-                visitTime: /^(\d{4})-(\d{4})$/u,
+                robotVersion: /^[12]\.0$/,
+                requestRate: /^\d+\/\d+[smh]?\s+(\d{4})-(\d{4})$/,
+                visitTime: /^(\d{4})-(\d{4})$/,
                 eol: /\r\n|\r|\n/,
-                inlineComment: /(?:\s|^)#/
+                inlineComment: /(?:\s|^)#/,
+                pathForwardSlash: /\/+/g
             };
 
             this.parse(content);
@@ -617,7 +622,7 @@
                 decodedPath = path;
             }
             /** @type {string} */
-            const newPath = decodedPath.replace(/\/+/gu, '/');
+            const newPath = decodedPath.replace(this.re.pathForwardSlash, '/');
             if (newPath[0] === '/') return newPath;
             return `/${newPath}`;
         }
