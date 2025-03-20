@@ -1,45 +1,45 @@
-"use strict"
+'use strict';
 
-const pkg = require("./package.json"),
-    gulp = require("gulp"),
-    uglify = require("gulp-uglify"),
-    rename = require("gulp-rename"),
-    sourcemaps = require("gulp-sourcemaps"),
-    header = require("gulp-header"),
-    eslint = require("gulp-eslint"),
-    mocha = require("gulp-mocha"),
-    benchmark = require("gulp-benchmark"),
-    banner = "/*! <%= pkg.name %> v<%= pkg.version %> | Copyright (c) 2025-present, <%= pkg.author %> | <%= pkg.license %> */\n"
+const pkg = require('./package.json'),
+    gulp = require('gulp'),
+    uglify = require('gulp-uglify'),
+    rename = require('gulp-rename'),
+    sourcemaps = require('gulp-sourcemaps'),
+    header = require('gulp-header'),
+    eslint = require('gulp-eslint'),
+    mocha = require('gulp-mocha'),
+    benchmark = require('gulp-benchmark'),
+    banner = '/*! <%= pkg.name %> v<%= pkg.version %> | Copyright (c) 2025-present, <%= pkg.author %> | <%= pkg.license %> */\n';
 
-gulp.task("benchmark", function () {
+gulp.task('benchmark', () => {
     return gulp
-        .src("benchmark/*.js", { read: false })
-        .pipe(benchmark())
-})
+        .src('benchmark/*.js', { read: false })
+        .pipe(benchmark());
+});
 
-gulp.task("lint", function () {
+gulp.task('lint', () => {
     return gulp
-        .src("src/*.js")
+        .src('src/*.js')
         .pipe(eslint())
-        .pipe(eslint.format())
-})
+        .pipe(eslint.format());
+});
 
-gulp.task("test", ["lint"], function () {
+gulp.task('test', ['lint'], () => {
     return gulp
-        .src("test/*.js", { read: false })
-        .pipe(mocha({ reporter: "nyan" }))
-})
+        .src('test/*.js', { read: false })
+        .pipe(mocha({ reporter: 'nyan' }));
+});
 
-gulp.task("dist", ["test"], function () {
+gulp.task('dist', ['test'], () => {
     return gulp.src([
-        "src/*.js"
+        'src/*.js'
     ])
         .pipe(sourcemaps.init())
         .pipe(uglify())
-        .pipe(rename({ suffix: ".min" }))
+        .pipe(rename({ suffix: '.min' }))
         .pipe(header(banner, { pkg: pkg }))
-        .pipe(sourcemaps.write("."))
-        .pipe(gulp.dest("dist"))
-})
+        .pipe(sourcemaps.write('.'))
+        .pipe(gulp.dest('dist'));
+});
 
-gulp.task("default", ["dist"])
+gulp.task('default', ['dist']);

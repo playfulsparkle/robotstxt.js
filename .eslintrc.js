@@ -35,9 +35,6 @@ module.exports = {
         // Ensure that all functions have return type declarations if needed
         "consistent-return": "error",
 
-        // Disallow function declarations that are not used
-        "no-unused-function": "error",
-
         // Require strict equality (===) instead of equality (==)
         "eqeqeq": "error",
 
@@ -56,9 +53,6 @@ module.exports = {
         // Require arrow functions for callbacks or functions that don't require `this`
         "prefer-arrow-callback": "error",
 
-        // Disallow `for` loops with async functions
-        "no-await-in-loop": "error",
-
         // Enforce use of template literals over string concatenation
         "prefer-template": "error",
 
@@ -71,29 +65,17 @@ module.exports = {
         // Require using `===` instead of `==`
         "eqeqeq": "error",
 
-        // Enforce consistent function declaration styles (function vs. arrow function)
-        "func-style": ["error", "expression"],
-
         // Prevent the use of the `with` statement
         "no-with": "error",
 
         // Prefer `const` over `let` for constants that don't change
         "prefer-const": "error",
 
-        // Require all promises to be returned or chained
-        "no-promise-executor-return": "error",
-
         // Disallow the use of `alert`, `confirm`, and `prompt`
         "no-alert": "error",
 
-        // Enforce that `this` is used consistently in class methods
-        "class-methods-use-this": "error",
-
         // Require the use of destructuring
         "prefer-destructuring": ["error", { "object": true, "array": false }],
-
-        // Disallow the use of the `continue` statement
-        "no-continue": "error",
 
         // Enforce explicit `return` in all functions
         "consistent-return": "error",

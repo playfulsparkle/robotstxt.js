@@ -1,7 +1,7 @@
 /* global window, exports, define */
 
 !function () {
-    "use strict"
+    'use strict';
 
     /**
      * Single robots.txt rule (allow/disallow directive)
@@ -14,11 +14,11 @@
          */
         constructor(type, path) {
             /** @member {string} */
-            this.type = type
+            this.type = type;
             /** @member {string} */
-            this.path = path
+            this.path = path;
             /** @member {string} */
-            this.regex = this.createRegex(path)
+            this.regex = this.createRegex(path);
         }
 
         /**
@@ -27,7 +27,7 @@
          * @return {boolean} - True if the path matches the rule's pattern
          */
         match(path) {
-            return this.regex.test(path)
+            return this.regex.test(path);
         }
 
         /**
@@ -38,10 +38,10 @@
          */
         createRegex(path) {
             const pattern = path
-                .replace(/[.^+?(){}[\]|\\]/gu, "\\$&")  // Escape regex special characters
-                .replace(/\*/gu, ".*?")                // Replace * with non-greedy wildcard
+                .replace(/[.^+?(){}[\]|\\]/gu, '\\$&')  // Escape regex special characters
+                .replace(/\*/gu, '.*?');                // Replace * with non-greedy wildcard
 
-            return new RegExp(`^${pattern}`, "u")
+            return new RegExp(`^${pattern}`, 'u');
         }
     }
 
@@ -55,21 +55,21 @@
          */
         constructor(userAgent) {
             /** @member {string} - User agent identifier for this group */
-            this.userAgent = userAgent
+            this.userAgent = userAgent;
             /** @member {number|undefined} - Delay between crawler requests in seconds */
-            this.crawlDelay = undefined
+            this.crawlDelay = undefined;
             /** @member {number|undefined} - Specifies the minimum interval for a robot to wait after caching one page, before starting to cache another in seconds */
-            this.cacheDelay = undefined
+            this.cacheDelay = undefined;
             /** @member {Rule[]} - Collection of rules for this user agent */
-            this.rules = []
+            this.rules = [];
             /** @member {string} - Optional comment associated with the group */
-            this.comment = []
+            this.comment = [];
             /** @member {string|undefined} - Version of robots.txt specification used */
-            this.robotVersion = undefined
+            this.robotVersion = undefined;
             /** @member {string|undefined} - Recommended visit time from robots.txt */
-            this.visitTime = undefined
+            this.visitTime = undefined;
             /** @member {string[]} - Request rate limits for this user agent */
-            this.requestRates = []
+            this.requestRates = [];
         }
 
         /**
@@ -77,7 +77,7 @@
          * @return {string} User agent identifier
          */
         getName() {
-            return this.userAgent
+            return this.userAgent;
         }
 
         /**
@@ -85,7 +85,7 @@
          * @return {string[]} Group comment if available
          */
         getComment() {
-            return this.comment
+            return this.comment;
         }
 
         /**
@@ -93,7 +93,7 @@
          * @return {string|undefined} Version number of robots.txt specification
          */
         getRobotVersion() {
-            return this.robotVersion
+            return this.robotVersion;
         }
 
         /**
@@ -101,7 +101,7 @@
          * @return {string|undefined} Suggested crawl time window
          */
         getVisitTime() {
-            return this.visitTime
+            return this.visitTime;
         }
 
         /**
@@ -109,7 +109,7 @@
          * @return {string[]} Array of request rate rules
          */
         getRequestRates() {
-            return this.requestRates
+            return this.requestRates;
         }
 
         /**
@@ -117,7 +117,7 @@
          * @return {number|undefined} Delay between requests in seconds
          */
         getCacheDelay() {
-            return this.cacheDelay
+            return this.cacheDelay;
         }
 
         /**
@@ -125,7 +125,7 @@
          * @return {number|undefined} Delay between requests in seconds
          */
         getCrawlDelay() {
-            return this.crawlDelay
+            return this.crawlDelay;
         }
 
         /**
@@ -133,7 +133,7 @@
          * @return {Rule[]} Array of rule objects
          */
         getRules() {
-            return this.rules
+            return this.rules;
         }
 
         /**
@@ -142,9 +142,9 @@
          * @param {string} path - URL path pattern
          */
         addRule(type, path) {
-            if (typeof type === "undefined") throw new Error("The 'type' parameter is required.")
-            if (typeof path === "undefined") throw new Error("The 'path' parameter is required.")
-            this.rules.push(new Rule(type, path))
+            if (typeof type === 'undefined') throw new Error('The "type" parameter is required.');
+            if (typeof path === 'undefined') throw new Error('The "path" parameter is required.');
+            this.rules.push(new Rule(type, path));
         }
     }
 
@@ -163,7 +163,7 @@
              * @description Collection of user agent groups containing access rules.
              *              Represents all parsed User-agent sections from robots.txt
              */
-            this.groups = []
+            this.groups = [];
 
             /**
              * @private
@@ -171,7 +171,7 @@
              * @description Array of absolute URLs to sitemaps specified in robots.txt.
              *              Collected from Sitemap directives across the entire file.
              */
-            this.sitemaps = []
+            this.sitemaps = [];
 
             /**
              * @private
@@ -182,7 +182,7 @@
              *              parameters, session IDs, or other URL-specific values
              *              that don't affect content.
              */
-            this.cleanParam = []
+            this.cleanParam = [];
 
             /**
              * @private
@@ -192,22 +192,22 @@
              *                - Handle internationalization/country targeting (ccTLDs)
              *                - Enforce consistent domain (with/without www) for search engines
              */
-            this.host = undefined
+            this.host = undefined;
 
             /**
              * @private
              * @type {string[]}
              * @description Parsing error, warning etc. reports
              */
-            this.reports = []
+            this.reports = [];
 
             this.re = {
                 robotVersion: /^(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z]+(?:\.\d+)?))?$/u,
                 requestRate: /^\d+\/\d+[smh]?\s+(\d{4})-(\d{4})$/u,
                 visitTime: /^([01]\d|2[0-3])([0-5]\d)-([01]\d|2[0-3])([0-5]\d)$/u
-            }
+            };
 
-            this.parse(content)
+            this.parse(content);
         }
 
         /**
@@ -216,202 +216,202 @@
          * @param {string} content - Raw robots.txt content
          */
         parse(content) {
-            if (typeof content === "undefined") throw new Error("The 'content' parameter is required.")
+            if (typeof content === 'undefined') throw new Error('The "content" parameter is required.');
 
             /** @type {string[]} */
-            const normalizedContent = []
+            const normalizedContent = [];
 
             for (const line of content.split(/\r\n|\r|\n/)) {
                 /** @type {string} */
-                let processedLine = line.trim()
+                const processedLine = line.trim();
 
-                if (!processedLine || processedLine[0] === "#") continue
-
-                /** @type {number} */
-                const colonIndex = processedLine.indexOf(":")
-                if (colonIndex === -1) continue
-
-                /** @type {string} */
-                const directive = processedLine.slice(0, colonIndex).trim().toLowerCase()
-                /** @type {string} */
-                let value = processedLine.slice(colonIndex + 1).trim()
+                if (!processedLine || processedLine[0] === '#') continue;
 
                 /** @type {number} */
-                const commentIndex = value.search(/(?:\s|^)#/)
+                const colonIndex = processedLine.indexOf(':');
+                if (colonIndex === -1) continue;
+
+                /** @type {string} */
+                const directive = processedLine.slice(0, colonIndex).trim().toLowerCase();
+                /** @type {string} */
+                let value = processedLine.slice(colonIndex + 1).trim();
+
+                /** @type {number} */
+                const commentIndex = value.search(/(?:\s|^)#/);
                 if (commentIndex !== -1) {
-                    value = value.slice(0, commentIndex).trim()
+                    value = value.slice(0, commentIndex).trim();
                 }
 
                 if (directive && value) {
-                    normalizedContent.push({ directive, value })
+                    normalizedContent.push({ directive, value });
                 }
             }
 
             /** @type {string[]} */
-            let userAgentList = []
+            let userAgentList = [];
             /** @type {boolean} */
-            let sameUserAgent = false
+            let sameUserAgent = false;
             /** @type {boolean} */
-            let userAgentSeen = false
+            let userAgentSeen = false;
             /** @type {Object.<string, Group>} */
-            const tempGroups = {}
+            const tempGroups = {};
 
             /** @type {string} - Array of directives which require at least one User-Agent present. */
             const uaDirectives = [
-                "allow",
-                "disallow",
-                "noindex",
-                "comment",
-                "robot-version",
-                "request-rate",
-                "visit-time",
-                "cache-delay",
-                "crawl-delay"
-            ]
+                'allow',
+                'disallow',
+                'noindex',
+                'comment',
+                'robot-version',
+                'request-rate',
+                'visit-time',
+                'cache-delay',
+                'crawl-delay'
+            ];
 
             // Process each directive and build rule groups
             for (let index = 0; index < normalizedContent.length; index++) {
                 /** @type {Object.<string, string>} */
-                const currentLine = normalizedContent[index]
+                const currentLine = normalizedContent[index];
 
                 /** @type {boolean} */
-                const needsDefaultUa = uaDirectives.indexOf(currentLine.directive) !== -1 && !userAgentSeen
+                const needsDefaultUa = uaDirectives.indexOf(currentLine.directive) !== -1 && !userAgentSeen;
 
-                if (currentLine.directive === "user-agent" || needsDefaultUa) {
-                    userAgentSeen = true
+                if (currentLine.directive === 'user-agent' || needsDefaultUa) {
+                    userAgentSeen = true;
 
-                    const uaName = needsDefaultUa ? "*" : currentLine.value
+                    const uaName = needsDefaultUa ? '*' : currentLine.value;
 
                     if (!userAgentList.indexOf(uaName) !== -1) {
-                        userAgentList.push(uaName)
+                        userAgentList.push(uaName);
                     }
 
                     if (!tempGroups[uaName]) {
-                        tempGroups[uaName] = new Group(uaName)
+                        tempGroups[uaName] = new Group(uaName);
                     }
                 }
 
-                if (currentLine.directive === "allow") {
-                    const normalizedPath = this.normalizePath(currentLine.value)
+                if (currentLine.directive === 'allow') {
+                    const normalizedPath = this.normalizePath(currentLine.value);
 
-                    userAgentList.forEach(agent => tempGroups[agent].addRule("allow", normalizedPath))
-                    sameUserAgent = true
+                    userAgentList.forEach(agent => tempGroups[agent].addRule('allow', normalizedPath));
+                    sameUserAgent = true;
                 }
-                else if (currentLine.directive === "disallow") {
-                    const normalizedPath = this.normalizePath(currentLine.value)
+                else if (currentLine.directive === 'disallow') {
+                    const normalizedPath = this.normalizePath(currentLine.value);
 
-                    userAgentList.forEach(agent => tempGroups[agent].addRule("disallow", normalizedPath))
-                    sameUserAgent = true
+                    userAgentList.forEach(agent => tempGroups[agent].addRule('disallow', normalizedPath));
+                    sameUserAgent = true;
                 }
-                else if (currentLine.directive === "noindex") {
-                    const normalizedPath = this.normalizePath(currentLine.value)
+                else if (currentLine.directive === 'noindex') {
+                    const normalizedPath = this.normalizePath(currentLine.value);
 
-                    userAgentList.forEach(agent => tempGroups[agent].addRule("noindex", normalizedPath))
-                    sameUserAgent = true
+                    userAgentList.forEach(agent => tempGroups[agent].addRule('noindex', normalizedPath));
+                    sameUserAgent = true;
                 }
-                else if (currentLine.directive === "cache-delay") {
-                    const cacheDelay = currentLine.value * 1
+                else if (currentLine.directive === 'cache-delay') {
+                    const cacheDelay = currentLine.value * 1;
 
                     if (isNaN(cacheDelay)) {
-                        this.reports.push(`Invalid Cache-delay value: ${currentLine.value} is not a number.`)
-                        continue
+                        this.reports.push(`Invalid Cache-delay value: ${currentLine.value} is not a number.`);
+                        continue;
                     }
 
                     if (cacheDelay <= 0) {
-                        this.reports.push(`Cache-delay must be a positive number. The provided value is ${cacheDelay}.`)
-                        continue
+                        this.reports.push(`Cache-delay must be a positive number. The provided value is ${cacheDelay}.`);
+                        continue;
                     }
 
                     userAgentList.forEach(agent => {
                         if (!tempGroups[agent].cacheDelay) {
-                            tempGroups[agent].cacheDelay = cacheDelay
+                            tempGroups[agent].cacheDelay = cacheDelay;
                         }
-                    })
-                    sameUserAgent = true
+                    });
+                    sameUserAgent = true;
                 }
-                else if (currentLine.directive === "crawl-delay") {
-                    const crawlDelay = currentLine.value * 1
+                else if (currentLine.directive === 'crawl-delay') {
+                    const crawlDelay = currentLine.value * 1;
 
                     if (isNaN(crawlDelay)) {
-                        this.reports.push(`Invalid Crawl-Delay value: ${currentLine.value} is not a number.`)
-                        continue
+                        this.reports.push(`Invalid Crawl-Delay value: ${currentLine.value} is not a number.`);
+                        continue;
                     }
 
                     if (crawlDelay <= 0) {
-                        this.reports.push(`Crawl-Delay must be a positive number. The provided value is ${crawlDelay}.`)
-                        continue
+                        this.reports.push(`Crawl-Delay must be a positive number. The provided value is ${crawlDelay}.`);
+                        continue;
                     }
 
                     userAgentList.forEach(agent => {
                         if (!tempGroups[agent].crawlDelay) {
-                            tempGroups[agent].crawlDelay = crawlDelay
+                            tempGroups[agent].crawlDelay = crawlDelay;
                         }
-                    })
-                    sameUserAgent = true
+                    });
+                    sameUserAgent = true;
                 }
-                else if (currentLine.directive === "comment") {
-                    userAgentList.forEach(agent => tempGroups[agent].comment.push(currentLine.value))
-                    sameUserAgent = true
+                else if (currentLine.directive === 'comment') {
+                    userAgentList.forEach(agent => tempGroups[agent].comment.push(currentLine.value));
+                    sameUserAgent = true;
                 }
-                else if (currentLine.directive === "robot-version") {
+                else if (currentLine.directive === 'robot-version') {
                     if (!this.re.robotVersion.test(currentLine.value)) {
-                        this.reports.push(`Invalid Robot-Version value: ${currentLine.value} does not match semantic versioning format.`)
-                        continue
+                        this.reports.push(`Invalid Robot-Version value: ${currentLine.value} does not match semantic versioning format.`);
+                        continue;
                     }
 
-                    userAgentList.forEach(agent => tempGroups[agent].robotVersion = currentLine.value)
-                    sameUserAgent = true
+                    userAgentList.forEach(agent => tempGroups[agent].robotVersion = currentLine.value);
+                    sameUserAgent = true;
                 }
-                else if (currentLine.directive === "request-rate") {
-                    const requestRateMatch = currentLine.value.match(this.re.requestRate)
+                else if (currentLine.directive === 'request-rate') {
+                    const requestRateMatch = currentLine.value.match(this.re.requestRate);
                     if (!requestRateMatch) {
-                        this.reports.push(`Invalid Request-rate value: ${currentLine.value} does not match required format.`)
-                        continue
+                        this.reports.push(`Invalid Request-rate value: ${currentLine.value} does not match required format.`);
+                        continue;
                     }
 
                     if (requestRateMatch[1] && requestRateMatch[2]) {
-                        const startTime = requestRateMatch[1]
-                        const endTime = requestRateMatch[2]
+                        const startTime = requestRateMatch[1];
+                        const endTime = requestRateMatch[2];
 
                         if (!this.isValidTime(startTime) || !this.isValidTime(endTime)) {
-                            this.reports.push(`Invalid Request-rate time format: ${startTime}-${endTime}. Times must be in 24-hour HHMM format (0000-2359).`)
-                            continue
+                            this.reports.push(`Invalid Request-rate time format: ${startTime}-${endTime}. Times must be in 24-hour HHMM format (0000-2359).`);
+                            continue;
                         }
                     }
 
-                    userAgentList.forEach(agent => tempGroups[agent].requestRates.push(currentLine.value))
-                    sameUserAgent = true
+                    userAgentList.forEach(agent => tempGroups[agent].requestRates.push(currentLine.value));
+                    sameUserAgent = true;
                 }
-                else if (currentLine.directive === "visit-time") {
+                else if (currentLine.directive === 'visit-time') {
                     if (!this.re.visitTime.test(currentLine.value)) {
-                        this.reports.push(`Invalid Visit-time value: ${currentLine.value} does not match time range format.`)
-                        continue
+                        this.reports.push(`Invalid Visit-time value: ${currentLine.value} does not match time range format.`);
+                        continue;
                     }
 
-                    userAgentList.forEach(agent => tempGroups[agent].visitTime = currentLine.value)
-                    sameUserAgent = true
+                    userAgentList.forEach(agent => tempGroups[agent].visitTime = currentLine.value);
+                    sameUserAgent = true;
                 }
-                else if (currentLine.directive === "sitemap") {
-                    this.sitemaps.push(currentLine.value)
+                else if (currentLine.directive === 'sitemap') {
+                    this.sitemaps.push(currentLine.value);
                 }
-                else if (currentLine.directive === "clean-param") {
-                    this.cleanParam.push(currentLine.value)
+                else if (currentLine.directive === 'clean-param') {
+                    this.cleanParam.push(currentLine.value);
                 }
-                else if (currentLine.directive === "host") {
-                    this.host = currentLine.value
+                else if (currentLine.directive === 'host') {
+                    this.host = currentLine.value;
                 }
 
                 /** @type {Object.<string, string>} */
-                const nextLine = normalizedContent[index + 1]
+                const nextLine = normalizedContent[index + 1];
 
                 // Reset user agent list on new group
-                if (nextLine && sameUserAgent && nextLine.directive === "user-agent") {
-                    sameUserAgent = false
-                    userAgentList = []
+                if (nextLine && sameUserAgent && nextLine.directive === 'user-agent') {
+                    sameUserAgent = false;
+                    userAgentList = [];
                 }
             }
 
-            this.groups = Object.keys(tempGroups).map(key => tempGroups[key])
+            this.groups = Object.keys(tempGroups).map(key => tempGroups[key]);
         }
 
         /**
@@ -419,7 +419,7 @@
          * @returns {string[]} Parsing error, warning etc. reports
          */
         getReports() {
-            return this.reports
+            return this.reports;
         }
 
         /**
@@ -429,40 +429,40 @@
          * @return {boolean} - True if allowed, false if disallowed
          */
         isAllowed(url, userAgent) {
-            if (typeof url === "undefined") throw new Error("The 'url' parameter is required.")
-            if (typeof userAgent === "undefined") throw new Error("The 'userAgent' parameter is required.")
+            if (typeof url === 'undefined') throw new Error('The "url" parameter is required.');
+            if (typeof userAgent === 'undefined') throw new Error('The "userAgent" parameter is required.');
 
             /** @type {Rule[]} */
-            const rules = this.getApplicableRules(userAgent)
+            const rules = this.getApplicableRules(userAgent);
             /** @type {string} */
-            const urlPath = this.normalizeUrlPath(url)
+            const urlPath = this.normalizeUrlPath(url);
             /** @type {Rule[]} */
-            const matchingRules = []
+            const matchingRules = [];
 
             for (const rule of rules) {
                 if (rule.match(urlPath)) {
-                    matchingRules.push(rule)
+                    matchingRules.push(rule);
                 }
             }
 
-            if (matchingRules.length === 0) return true
+            if (matchingRules.length === 0) return true;
 
             /** @type {Rule} */
-            let mostSpecific = matchingRules[0]
+            let mostSpecific = matchingRules[0];
 
             // Find most specific rule based on path length and special characters
             for (const rule of matchingRules) {
                 /** @type {number} */
-                const currentSpecificity = this.getRuleSpecificity(rule.path)
+                const currentSpecificity = this.getRuleSpecificity(rule.path);
                 /** @type {number} */
-                const mostSpecificSpecificity = this.getRuleSpecificity(mostSpecific.path)
+                const mostSpecificSpecificity = this.getRuleSpecificity(mostSpecific.path);
 
                 if (currentSpecificity > mostSpecificSpecificity) {
-                    mostSpecific = rule
+                    mostSpecific = rule;
                 }
             }
 
-            return mostSpecific.type === "allow"
+            return mostSpecific.type === 'allow';
         }
 
         /**
@@ -472,7 +472,7 @@
          * @return {boolean} - True if disallowed, false if allowed
          */
         isDisallowed(url, userAgent) {
-            return !this.isAllowed(url, userAgent)
+            return !this.isAllowed(url, userAgent);
         }
 
         /**
@@ -480,7 +480,7 @@
          * @return {string[]} - Array of sitemap URLs
          */
         getSitemaps() {
-            return this.sitemaps
+            return this.sitemaps;
         }
 
         /**
@@ -490,7 +490,7 @@
          *                         - Path prefix is optional and specifies URL scope
          */
         getCleanParams() {
-            return this.cleanParam
+            return this.cleanParam;
         }
 
         /**
@@ -501,7 +501,7 @@
          *                        - undefined if no Host directive declared
          */
         getHost() {
-            return this.host = undefined
+            return this.host = undefined;
         }
 
         /**
@@ -510,15 +510,15 @@
          * @return {Group|undefined} - Matching group or undefined
          */
         getGroup(userAgent) {
-            if (!userAgent) return undefined
+            if (!userAgent) return undefined;
             for (let i = 0; i < this.groups.length; i++) {
-                const group = this.groups[i]
+                const group = this.groups[i];
 
                 if (group.userAgent.toLowerCase() === userAgent.toLowerCase()) {
-                    return group
+                    return group;
                 }
             }
-            return undefined
+            return undefined;
         }
 
         /**
@@ -529,10 +529,10 @@
          */
         getRuleSpecificity(path) {
             /** @type {number} */
-            let specificity = path.length
-            if (path.indexOf("*") !== -1) specificity -= 0.5
-            else if (path.slice(-1) === "$") specificity += 0.5
-            return specificity
+            let specificity = path.length;
+            if (path.indexOf('*') !== -1) specificity -= 0.5;
+            else if (path.slice(-1) === '$') specificity += 0.5;
+            return specificity;
         }
 
         /**
@@ -543,9 +543,9 @@
          */
         getApplicableGroups(userAgent) {
             /** @type {Group[]} */
-            const exactGroups = this.groups.filter(group => group.getName().toLowerCase() === userAgent.toLowerCase())
-            if (exactGroups.length > 0) return exactGroups
-            return this.groups.filter(group => group.getName() === "*")
+            const exactGroups = this.groups.filter(group => group.getName().toLowerCase() === userAgent.toLowerCase());
+            if (exactGroups.length > 0) return exactGroups;
+            return this.groups.filter(group => group.getName() === '*');
         }
 
         /**
@@ -556,8 +556,8 @@
          */
         getApplicableRules(userAgent) {
             /** @type {Rule[]} */
-            const rules = this.getApplicableGroups(userAgent)
-            return rules.reduce((acc, group) => acc.concat(group.getRules()), [])
+            const rules = this.getApplicableGroups(userAgent);
+            return rules.reduce((acc, group) => acc.concat(group.getRules()), []);
         }
 
         /**
@@ -568,9 +568,9 @@
          */
         normalizeUrlPath(url) {
             try {
-                return this.normalizePath(new URL(url).pathname)
+                return this.normalizePath(new URL(url).pathname);
             } catch (error) {
-                return this.normalizePath(url)
+                return this.normalizePath(url);
             }
         }
 
@@ -582,24 +582,24 @@
          */
         normalizePath(path) {
             /** @type {string} */
-            let decodedPath
+            let decodedPath;
             try {
-                decodedPath = decodeURIComponent(path)
+                decodedPath = decodeURIComponent(path);
             } catch (error) {
-                decodedPath = path
+                decodedPath = path;
             }
             /** @type {string} */
-            const newPath = decodedPath.replace(/\/+/gu, "/")
-            if (newPath[0] === "/") return newPath
-            return `/${newPath}`
+            const newPath = decodedPath.replace(/\/+/gu, '/');
+            if (newPath[0] === '/') return newPath;
+            return `/${newPath}`;
         }
 
         isValidTime(time) {
-            const hours = parseInt(time.substring(0, 2), 10)
-            const minutes = parseInt(time.substring(2, 4), 10)
+            const hours = parseInt(time.substring(0, 2), 10);
+            const minutes = parseInt(time.substring(2, 4), 10);
 
             // Validate hours and minutes
-            return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59
+            return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
         }
     }
 
@@ -609,19 +609,19 @@
      * @return {RobotsTxtParser} - Configured parser instance
      */
     function robotstxt(content) {
-        return new RobotsTxtParser(content)
+        return new RobotsTxtParser(content);
     }
 
     // Universal module exports
     /* eslint-disable quote-props */
-    if (typeof exports !== "undefined") {
-        exports.robotstxt = robotstxt
+    if (typeof exports !== 'undefined') {
+        exports.robotstxt = robotstxt;
     }
-    if (typeof window !== "undefined") {
-        window.robotstxt = robotstxt
-        if (typeof define === "function" && define.amd) {
-            define(() => ({ robotstxt }))
+    if (typeof window !== 'undefined') {
+        window.robotstxt = robotstxt;
+        if (typeof define === 'function' && define.amd) {
+            define(() => ({ robotstxt }));
         }
     }
     /* eslint-enable quote-props */
-}()
+}();
