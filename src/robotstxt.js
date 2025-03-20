@@ -204,7 +204,9 @@
             this.re = {
                 robotVersion: /^(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z]+(?:\.\d+)?))?$/u,
                 requestRate: /^\d+\/\d+[smh]?\s+(\d{4})-(\d{4})$/u,
-                visitTime: /^([01]\d|2[0-3])([0-5]\d)-([01]\d|2[0-3])([0-5]\d)$/u
+                visitTime: /^(\d{4})-(\d{4})$/u,
+                eol: /\r\n|\r|\n/,
+                inlineComment: /(?:\s|^)#/
             };
 
             this.parse(content);
@@ -221,29 +223,36 @@
             /** @type {string[]} */
             const normalizedContent = [];
 
-            for (const line of content.split(/\r\n|\r|\n/)) {
-                /** @type {string} */
-                const processedLine = line.trim();
+            const contentLines = content.split(this.re.eol);
+
+            for (let index = 0; index < contentLines.length; index++) {
+                /** @type {string}  - Trimed robots.txt line */
+                const processedLine = contentLines[index].trim();
 
                 if (!processedLine || processedLine[0] === '#') continue;
 
-                /** @type {number} */
+                /** @type {number} - directive:value separated using colon character */
                 const colonIndex = processedLine.indexOf(':');
+
                 if (colonIndex === -1) continue;
 
-                /** @type {string} */
+                /** @type {string} - trimmed, lowercase directive */
                 const directive = processedLine.slice(0, colonIndex).trim().toLowerCase();
-                /** @type {string} */
+
+                /** @type {string} - trimmed directive value */
                 let value = processedLine.slice(colonIndex + 1).trim();
 
-                /** @type {number} */
-                const commentIndex = value.search(/(?:\s|^)#/);
+                /** @type {number} - directive value comment index */
+                const commentIndex = value.search(this.re.inlineComment);
+
                 if (commentIndex !== -1) {
+                    // Remove inline comment
                     value = value.slice(0, commentIndex).trim();
                 }
 
+                // Make sure that directive and value is set
                 if (directive && value) {
-                    normalizedContent.push({ directive, value });
+                    normalizedContent.push({ index, directive, value });
                 }
             }
 
@@ -309,11 +318,12 @@
                     userAgentList.forEach(agent => tempGroups[agent].addRule('noindex', normalizedPath));
                     sameUserAgent = true;
                 }
+                // Cache-delay: 10
                 else if (currentLine.directive === 'cache-delay') {
                     const cacheDelay = currentLine.value * 1;
 
                     if (isNaN(cacheDelay)) {
-                        this.reports.push(`Invalid Cache-delay value: ${currentLine.value} is not a number.`);
+                        this.reports.push(`Invalid Cache-delay directive value: "${currentLine.value}".`);
                         continue;
                     }
 
@@ -329,11 +339,12 @@
                     });
                     sameUserAgent = true;
                 }
+                // Crawl-delay: 10
                 else if (currentLine.directive === 'crawl-delay') {
                     const crawlDelay = currentLine.value * 1;
 
                     if (isNaN(crawlDelay)) {
-                        this.reports.push(`Invalid Crawl-Delay value: ${currentLine.value} is not a number.`);
+                        this.reports.push(`Invalid Crawl-Delay directive value: "${currentLine.value}".`);
                         continue;
                     }
 
@@ -349,23 +360,27 @@
                     });
                     sameUserAgent = true;
                 }
+                // Comment: [text]
                 else if (currentLine.directive === 'comment') {
                     userAgentList.forEach(agent => tempGroups[agent].comment.push(currentLine.value));
                     sameUserAgent = true;
                 }
+                // Robot-version: 2.0.0
                 else if (currentLine.directive === 'robot-version') {
                     if (!this.re.robotVersion.test(currentLine.value)) {
-                        this.reports.push(`Invalid Robot-Version value: ${currentLine.value} does not match semantic versioning format.`);
+                        this.reports.push(`Invalid Robot-Version directive value: "${currentLine.value}".`);
                         continue;
                     }
 
                     userAgentList.forEach(agent => tempGroups[agent].robotVersion = currentLine.value);
                     sameUserAgent = true;
                 }
+                // Request-rate: <rate> # 100/24h
+                // Request-rate: <rate> <time> '-' <time> # 100/24h 1300-1659
                 else if (currentLine.directive === 'request-rate') {
                     const requestRateMatch = currentLine.value.match(this.re.requestRate);
                     if (!requestRateMatch) {
-                        this.reports.push(`Invalid Request-rate value: ${currentLine.value} does not match required format.`);
+                        this.reports.push(`Invalid Request-rate directive value: "${currentLine.value}".`);
                         continue;
                     }
 
@@ -374,7 +389,7 @@
                         const endTime = requestRateMatch[2];
 
                         if (!this.isValidTime(startTime) || !this.isValidTime(endTime)) {
-                            this.reports.push(`Invalid Request-rate time format: ${startTime}-${endTime}. Times must be in 24-hour HHMM format (0000-2359).`);
+                            this.reports.push(`Invalid Request-rate directive start-end time format: "${startTime}-${endTime}".`);
                             continue;
                         }
                     }
@@ -382,10 +397,22 @@
                     userAgentList.forEach(agent => tempGroups[agent].requestRates.push(currentLine.value));
                     sameUserAgent = true;
                 }
+                // Visit-time: <time> '-' <time>
                 else if (currentLine.directive === 'visit-time') {
-                    if (!this.re.visitTime.test(currentLine.value)) {
-                        this.reports.push(`Invalid Visit-time value: ${currentLine.value} does not match time range format.`);
+                    const visitTimeMatch = currentLine.value.match(this.re.visitTime);
+                    if (!visitTimeMatch) {
+                        this.reports.push(`Invalid Visit-time directive value: "${currentLine.value}".`);
                         continue;
+                    }
+
+                    if (visitTimeMatch[1] && visitTimeMatch[2]) {
+                        const startTime = visitTimeMatch[1];
+                        const endTime = visitTimeMatch[2];
+
+                        if (!this.isValidTime(startTime) || !this.isValidTime(endTime)) {
+                            this.reports.push(`Invalid Visit-time directive start-end time format: "${startTime}-${endTime}".`);
+                            continue;
+                        }
                     }
 
                     userAgentList.forEach(agent => tempGroups[agent].visitTime = currentLine.value);
@@ -394,6 +421,7 @@
                 else if (currentLine.directive === 'sitemap') {
                     this.sitemaps.push(currentLine.value);
                 }
+                // Clean-param: [parameter1]&[parameter2]&[...] [path]
                 else if (currentLine.directive === 'clean-param') {
                     this.cleanParam.push(currentLine.value);
                 }
@@ -511,8 +539,8 @@
          */
         getGroup(userAgent) {
             if (!userAgent) return undefined;
-            for (let i = 0; i < this.groups.length; i++) {
-                const group = this.groups[i];
+            for (let index = 0; index < this.groups.length; index++) {
+                const group = this.groups[index];
 
                 if (group.userAgent.toLowerCase() === userAgent.toLowerCase()) {
                     return group;

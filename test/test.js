@@ -61,14 +61,14 @@ Disallow: *`;
 
     it('should handle return User-Agent Robot-Version', () => {
         const content = `User-agent: vacuumweb
-Robot-version: invalid version number
+Robot-version: invalid_version_number
 Allow: *.html
 Disallow: *`;
         const r = robotstxt(content);
         const reports = r.getReports();
 
         assert.strictEqual(r.getGroup('vacuumweb').getRobotVersion(), undefined);
-        assert(reports.some(report => report.indexOf('Invalid Robot-Version value: invalid version number does not match semantic versioning format.') !== -1), 'Reports should indicate Robot-version format is invalid');
+        assert(reports.some(report => report.indexOf('Invalid Robot-Version directive value: "invalid_version_number".') !== -1), 'Reports should indicate Robot-version format is invalid');
     });
 
     it('should handle return User-Agent Request-rate', () => {
@@ -97,8 +97,8 @@ Disallow: *`;
         const reports = r.getReports();
 
         assert.deepStrictEqual(requestRates.length, 2, 'There should be 2 valid Request-Rate');
-        assert(reports.some(report => report.indexOf('Invalid Request-rate time format: 2700-0459. Times must be in 24-hour HHMM format (0000-2359).') !== -1), 'Reports should indicate Request-rate has invalid time format');
-        assert(reports.some(report => report.indexOf('Invalid Request-rate time format: 0500-3459. Times must be in 24-hour HHMM format (0000-2359).') !== -1), 'Reports should indicate Request-rate has invalid time format');
+        assert(reports.some(report => report.indexOf('Invalid Request-rate directive start-end time format: "2700-0459".') !== -1), 'Reports should indicate Request-rate has invalid time format');
+        assert(reports.some(report => report.indexOf('Invalid Request-rate directive start-end time format: "0500-3459".') !== -1), 'Reports should indicate Request-rate has invalid time format');
     });
 
     it('should handle return User-Agent Visit-time', () => {
@@ -122,7 +122,7 @@ Visit-time: 2542-3199		# and then only between xxxxx`;
         const reports = r.getReports();
 
         assert.strictEqual(r.getGroup('vacuumweb').getVisitTime(), undefined);
-        assert(reports.some(report => report.indexOf('Invalid Visit-time value: 2542-3199 does not match time range format.') !== -1), 'Reports should indicate Visit-time time range format is invalid');
+        assert(reports.some(report => report.indexOf('Invalid Visit-time directive start-end time format: "2542-3199".') !== -1), 'Reports should indicate Visit-time time range format is invalid');
     });
 });
 
@@ -264,7 +264,7 @@ describe('Cache-delay', () => {
         const group = r.getGroup('*');
 
         assert.strictEqual(group.getCacheDelay(), undefined, 'Cache-delay value should be false');
-        assert(reports.some(report => report.indexOf('Invalid Cache-delay value: invalid is not a number.') !== -1), 'Reports should indicate cache-delay is not a number');
+        assert(reports.some(report => report.indexOf('Invalid Cache-delay directive value: "invalid".') !== -1), 'Reports should indicate cache-delay is not a number');
     });
 
     it('should log an error if Cache-delay is 0 during parsing', () => {
@@ -335,7 +335,7 @@ describe('Crawl-Delay', () => {
         const group = r.getGroup('*');
 
         assert.strictEqual(group.getCrawlDelay(), undefined, 'Crawl-delay value should be false');
-        assert(reports.some(report => report.indexOf('Invalid Crawl-Delay value: invalid is not a number.') !== -1), 'Reports should indicate cache-delay is not a number');
+        assert(reports.some(report => report.indexOf('Invalid Crawl-Delay directive value: "invalid".') !== -1), 'Reports should indicate cache-delay is not a number');
     });
 
     it('should log an error if Crawl-Delay is 0 during parsing', () => {
@@ -676,5 +676,15 @@ Disallow: /`;
         assert.strictEqual(true, robots.isAllowed('/fishheads/catfish.php?parameters', '*'));
 
         assert.strictEqual(false, robots.isAllowed('/Fish.PHP', '*'));
+    });
+
+    it('Matches Disallowed path', () => {
+        const rules = `User-agent: *
+Allow: /
+Disallow: /protected`;
+        const robots = robotstxt(rules);
+
+        assert.strictEqual(true, robots.isAllowed('/', '*'));
+        assert.strictEqual(true, robots.isDisallowed('/protected', '*'));
     });
 });
