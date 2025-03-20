@@ -8,8 +8,7 @@
         "test": "mocha test/*.js",
         "pretest": "npm run lint",
         "lint": "eslint .",
-        "lint:fix": "eslint --fix .",
-        "publish": "npm publish --access public"
+        "lint:fix": "eslint --fix ."
     },
     "repository": {
         "type": "git",

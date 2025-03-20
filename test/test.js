@@ -59,6 +59,18 @@ Disallow: *`
         assert.strictEqual(r.getGroup("vacuumweb").getRobotVersion(), "2.0.0")
     })
 
+    it("should handle return User-Agent Robot-Version", function () {
+        const content = `User-agent: vacuumweb
+Robot-version: invalid version number
+Allow: *.html
+Disallow: *`
+        const r = robotstxt(content)
+        const reports = r.getReports()
+
+        assert.strictEqual(r.getGroup("vacuumweb").getRobotVersion(), undefined)
+        assert(reports.some(report => report.indexOf("Invalid Robot-Version value: invalid version number does not match semantic versioning format.") !== -1), "Reports should indicate Robot-version format is invalid")
+    })
+
     it("should handle return User-Agent Request-rate", function () {
         const content = `User-agent: vacuumweb
 Request-rate: 1/10m 1300-1659		# 8:00 am to noon EST
@@ -71,6 +83,24 @@ Disallow: *`
         assert.deepStrictEqual(r.getGroup("vacuumweb").getRequestRates(), ["1/10m 1300-1659", "1/20m 1700-0459", "5/1m  0500-1259"])
     })
 
+    it("should handle return User-Agent Request-rate", function () {
+        const content = `User-agent: vacuumweb
+Request-rate: 1/10m 1300-1659		# 8:00 am to noon EST
+Request-rate: 1/20m 2700-0459		# invalid time 1
+Request-rate: 5/1m  0500-3459		# invalid time 2
+Request-rate: 5/1m  0500-1259		# midnight to 7:59 am EST
+Allow: *.html
+Disallow: *`
+        const r = robotstxt(content)
+        const group = r.getGroup("vacuumweb")
+        const requestRates = group.getRequestRates()
+        const reports = r.getReports()
+
+        assert.deepStrictEqual(requestRates.length, 2, "There should be 2 valid Request-Rate")
+        assert(reports.some(report => report.indexOf("Invalid Request-rate time format: 2700-0459. Times must be in 24-hour HHMM format (0000-2359).") !== -1), "Reports should indicate Request-rate has invalid time format")
+        assert(reports.some(report => report.indexOf("Invalid Request-rate time format: 0500-3459. Times must be in 24-hour HHMM format (0000-2359).") !== -1), "Reports should indicate Request-rate has invalid time format")
+    })
+
     it("should handle return User-Agent Visit-time", function () {
         const content = `User-agent: vacuumweb
 Robot-version: 2.0.0 2.0
@@ -80,6 +110,19 @@ Visit-time: 0600-0845		# and then only between 1 am to 3:45 am EST`
         const r = robotstxt(content)
 
         assert.strictEqual(r.getGroup("vacuumweb").getVisitTime(), "0600-0845")
+    })
+
+    it("should handle User-Agent invalid Visit-time", function () {
+        const content = `User-agent: vacuumweb
+Robot-version: 2.0.0 2.0
+Allow: *.html			# only allow HTML pages
+Disallow: *			# and nothing else
+Visit-time: 2542-3199		# and then only between xxxxx`
+        const r = robotstxt(content)
+        const reports = r.getReports()
+
+        assert.strictEqual(r.getGroup("vacuumweb").getVisitTime(), undefined)
+        assert(reports.some(report => report.indexOf("Invalid Visit-time value: 2542-3199 does not match time range format.") !== -1), "Reports should indicate Visit-time time range format is invalid")
     })
 })
 
@@ -214,40 +257,26 @@ Sitemap: http://example.com/sitemap2.xml`
 describe("Cache-delay", function () {
     it("should log an error if Cache-delay is not a number", function () {
         const rules = `User-agent: *
-    Cache-delay: test`
+        Cache-delay: invalid`
 
-        const originalError = console.error
-        let errorMessage = ""
+        const r = robotstxt(rules)
+        const reports = r.getReports()
+        const group = r.getGroup("*")
 
-        // Mock console.error
-        console.error = msg => errorMessage = msg
-
-        // Execute parsing
-        robotstxt(rules)
-
-        // Restore console.error
-        console.error = originalError
-
-        assert.match(errorMessage, /Invalid Cache\-delay value: test is not a number\./, "Console error should indicate Cache-delay is not a number")
+        assert.strictEqual(group.getCacheDelay(), undefined, "Cache-delay value should be false")
+        assert(reports.some(report => report.indexOf("Invalid Cache-delay value: invalid is not a number.") !== -1), "Reports should indicate cache-delay is not a number")
     })
 
     it("should log an error if Cache-delay is 0 during parsing", function () {
         const rules = `User-agent: *
     Cache-delay: 0`
 
-        const originalError = console.error
-        let errorMessage = ""
+        const r = robotstxt(rules)
+        const reports = r.getReports()
+        const group = r.getGroup("*")
 
-        // Mock console.error
-        console.error = msg => errorMessage = msg
-
-        // Execute parsing
-        robotstxt(rules)
-
-        // Restore console.error
-        console.error = originalError
-
-        assert.match(errorMessage, /Cache\-delay must be a positive number. The provided value is 0\./, "Console error should indicate Cache-delay not a positive number")
+        assert.strictEqual(group.getCacheDelay(), undefined, "Cache-delay value should be false")
+        assert(reports.some(report => report.indexOf("Cache-delay must be a positive number. The provided value is 0.") !== -1), "Reports should indicate cache-delay is not a positive")
     })
 
     it("should return the correct cache delay", function () {
@@ -299,40 +328,26 @@ Cache-delay: 5`
 describe("Crawl-Delay", function () {
     it("should log an error if Crawl-Delay is not a number", function () {
         const rules = `User-agent: *
-    Crawl-Delay: test`
+        Crawl-Delay: invalid`
 
-        const originalError = console.error
-        let errorMessage = ""
+        const r = robotstxt(rules)
+        const reports = r.getReports()
+        const group = r.getGroup("*")
 
-        // Mock console.error
-        console.error = msg => errorMessage = msg
-
-        // Execute parsing
-        robotstxt(rules)
-
-        // Restore console.error
-        console.error = originalError
-
-        assert.match(errorMessage, /Invalid Crawl\-Delay value: test is not a number\./, "Console error should indicate Crawl-Delay is not a number")
+        assert.strictEqual(group.getCrawlDelay(), undefined, "Crawl-delay value should be false")
+        assert(reports.some(report => report.indexOf("Invalid Crawl-Delay value: invalid is not a number.") !== -1), "Reports should indicate cache-delay is not a number")
     })
 
     it("should log an error if Crawl-Delay is 0 during parsing", function () {
         const rules = `User-agent: *
     Crawl-Delay: 0`
 
-        const originalError = console.error
-        let errorMessage = ""
+        const r = robotstxt(rules)
+        const reports = r.getReports()
+        const group = r.getGroup("*")
 
-        // Mock console.error
-        console.error = msg => errorMessage = msg
-
-        // Execute parsing
-        robotstxt(rules)
-
-        // Restore console.error
-        console.error = originalError
-
-        assert.match(errorMessage, /Crawl\-Delay must be a positive number\. The provided value is 0\./, "Console error should indicate Crawl-Delay not a positive number")
+        assert.strictEqual(group.getCrawlDelay(), undefined, "Crawl-delay value should be false")
+        assert(reports.some(report => report.indexOf("Crawl-Delay must be a positive number. The provided value is 0.") !== -1), "Reports should indicate cache-delay is not a positive")
     })
 
     it("should return the correct crawl delay", function () {

@@ -78,6 +78,7 @@ bower install playfulsparkle/robotstxt.js
 ## Core Methods
 
 - `robotstxt(content: string): RobotsTxtParser` - Creates a new parser instance with the provided `robots.txt` content.
+- `getReports(): string[]` - Get an array of parsing error, warning etc.
 - `isAllowed(url: string, userAgent: string): boolean` - Check if a URL is allowed for the specified user agent (throws if parameters are missing).
 - `isDisallowed(url: string, userAgent: string): boolean` - Check if a URL is disallowed for the specified user agent (throws if parameters are missing).
 - `getGroup(userAgent: string): Group | undefined` - Get the rules group for a specific user agent (case-insensitive match).

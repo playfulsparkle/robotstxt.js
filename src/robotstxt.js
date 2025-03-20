@@ -188,11 +188,24 @@
              * @private
              * @type {string|undefined}
              * @description Preferred canonical host declaration from Host directive, used to:
-            *                 - Specify the primary domain when multiple mirrors exist
-            *                 - Handle internationalization/country targeting (ccTLDs)
-            *                 - Enforce consistent domain (with/without www) for search engines
+             *                - Specify the primary domain when multiple mirrors exist
+             *                - Handle internationalization/country targeting (ccTLDs)
+             *                - Enforce consistent domain (with/without www) for search engines
              */
             this.host = undefined
+
+            /**
+             * @private
+             * @type {string[]}
+             * @description Parsing error, warning etc. reports
+             */
+            this.reports = []
+
+            this.re = {
+                robotVersion: /^(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z]+(?:\.\d+)?))?$/u,
+                requestRate: /^\d+\/\d+[smh]?\s+(\d{4})-(\d{4})$/u,
+                visitTime: /^([01]\d|2[0-3])([0-5]\d)-([01]\d|2[0-3])([0-5]\d)$/u
+            }
 
             this.parse(content)
         }
@@ -280,16 +293,19 @@
 
                 if (currentLine.directive === "allow") {
                     const normalizedPath = this.normalizePath(currentLine.value)
+
                     userAgentList.forEach(agent => tempGroups[agent].addRule("allow", normalizedPath))
                     sameUserAgent = true
                 }
                 else if (currentLine.directive === "disallow") {
                     const normalizedPath = this.normalizePath(currentLine.value)
+
                     userAgentList.forEach(agent => tempGroups[agent].addRule("disallow", normalizedPath))
                     sameUserAgent = true
                 }
                 else if (currentLine.directive === "noindex") {
                     const normalizedPath = this.normalizePath(currentLine.value)
+
                     userAgentList.forEach(agent => tempGroups[agent].addRule("noindex", normalizedPath))
                     sameUserAgent = true
                 }
@@ -297,10 +313,12 @@
                     const cacheDelay = currentLine.value * 1
 
                     if (isNaN(cacheDelay)) {
-                        console.error(`Invalid Cache-delay value: ${currentLine.value} is not a number.`)
+                        this.reports.push(`Invalid Cache-delay value: ${currentLine.value} is not a number.`)
                         continue
-                    } else if (cacheDelay <= 0) {
-                        console.error(`Cache-delay must be a positive number. The provided value is ${cacheDelay}.`)
+                    }
+
+                    if (cacheDelay <= 0) {
+                        this.reports.push(`Cache-delay must be a positive number. The provided value is ${cacheDelay}.`)
                         continue
                     }
 
@@ -315,10 +333,12 @@
                     const crawlDelay = currentLine.value * 1
 
                     if (isNaN(crawlDelay)) {
-                        console.error(`Invalid Crawl-Delay value: ${currentLine.value} is not a number.`)
+                        this.reports.push(`Invalid Crawl-Delay value: ${currentLine.value} is not a number.`)
                         continue
-                    } else if (crawlDelay <= 0) {
-                        console.error(`Crawl-Delay must be a positive number. The provided value is ${crawlDelay}.`)
+                    }
+
+                    if (crawlDelay <= 0) {
+                        this.reports.push(`Crawl-Delay must be a positive number. The provided value is ${crawlDelay}.`)
                         continue
                     }
 
@@ -334,18 +354,40 @@
                     sameUserAgent = true
                 }
                 else if (currentLine.directive === "robot-version") {
-                    if (!/^(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z]+(?:\.\d+)?))?$/u.test(currentLine.value)) {
-                        console.error(`Invalid Robot-Version value: ${currentLine.value} does not match semantic versioning format.`)
+                    if (!this.re.robotVersion.test(currentLine.value)) {
+                        this.reports.push(`Invalid Robot-Version value: ${currentLine.value} does not match semantic versioning format.`)
                         continue
                     }
+
                     userAgentList.forEach(agent => tempGroups[agent].robotVersion = currentLine.value)
                     sameUserAgent = true
                 }
                 else if (currentLine.directive === "request-rate") {
+                    const requestRateMatch = currentLine.value.match(this.re.requestRate)
+                    if (!requestRateMatch) {
+                        this.reports.push(`Invalid Request-rate value: ${currentLine.value} does not match required format.`)
+                        continue
+                    }
+
+                    if (requestRateMatch[1] && requestRateMatch[2]) {
+                        const startTime = requestRateMatch[1]
+                        const endTime = requestRateMatch[2]
+
+                        if (!this.isValidTime(startTime) || !this.isValidTime(endTime)) {
+                            this.reports.push(`Invalid Request-rate time format: ${startTime}-${endTime}. Times must be in 24-hour HHMM format (0000-2359).`)
+                            continue
+                        }
+                    }
+
                     userAgentList.forEach(agent => tempGroups[agent].requestRates.push(currentLine.value))
                     sameUserAgent = true
                 }
                 else if (currentLine.directive === "visit-time") {
+                    if (!this.re.visitTime.test(currentLine.value)) {
+                        this.reports.push(`Invalid Visit-time value: ${currentLine.value} does not match time range format.`)
+                        continue
+                    }
+
                     userAgentList.forEach(agent => tempGroups[agent].visitTime = currentLine.value)
                     sameUserAgent = true
                 }
@@ -370,6 +412,14 @@
             }
 
             this.groups = Object.keys(tempGroups).map(key => tempGroups[key])
+        }
+
+        /**
+         * Returns the reports collected during parsing and validating the robots.txt file
+         * @returns {string[]} Parsing error, warning etc. reports
+         */
+        getReports() {
+            return this.reports
         }
 
         /**
@@ -542,6 +592,14 @@
             const newPath = decodedPath.replace(/\/+/gu, "/")
             if (newPath[0] === "/") return newPath
             return `/${newPath}`
+        }
+
+        isValidTime(time) {
+            const hours = parseInt(time.substring(0, 2), 10)
+            const minutes = parseInt(time.substring(2, 4), 10)
+
+            // Validate hours and minutes
+            return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59
         }
     }
 
