@@ -206,7 +206,7 @@
             this.reports = [];
 
             this.re = {
-                robotVersion: /^[12]\.0$/,
+                robotVersion: /^(\d+)(?:\.(\d+))*$/,
                 requestRate: /^\d+\/\d+[smh]?\s+(\d{4})-(\d{4})$/,
                 visitTime: /^(\d{4})-(\d{4})$/,
                 eol: /\r\n|\r|\n/,
@@ -306,12 +306,16 @@
                 }
 
                 if (currentLine.directive === 'allow') {
+                    if (!currentLine.value) continue;
+
                     const normalizedPath = this.normalizePath(currentLine.value);
 
                     userAgentList.forEach(agent => tempGroups[agent].addRule('allow', normalizedPath));
                     sameUserAgent = true;
                 }
                 else if (currentLine.directive === 'disallow') {
+                    if (!currentLine.value) continue;
+
                     const normalizedPath = this.normalizePath(currentLine.value);
 
                     userAgentList.forEach(agent => tempGroups[agent].addRule('disallow', normalizedPath));
