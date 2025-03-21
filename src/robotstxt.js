@@ -210,8 +210,7 @@
                 requestRate: /^\d+\/\d+[smh]?\s+(\d{4})-(\d{4})$/,
                 visitTime: /^(\d{4})-(\d{4})$/,
                 eol: /\r\n|\r|\n/,
-                inlineComment: /(?:\s|^)#/,
-                pathForwardSlash: /\/+/g
+                inlineComment: /(?:\s|^)#/
             };
 
             this.parse(content);
@@ -306,16 +305,12 @@
                 }
 
                 if (currentLine.directive === 'allow') {
-                    if (!currentLine.value) continue;
-
                     const normalizedPath = this.normalizePath(currentLine.value);
 
                     userAgentList.forEach(agent => tempGroups[agent].addRule('allow', normalizedPath));
                     sameUserAgent = true;
                 }
                 else if (currentLine.directive === 'disallow') {
-                    if (!currentLine.value) continue;
-
                     const normalizedPath = this.normalizePath(currentLine.value);
 
                     userAgentList.forEach(agent => tempGroups[agent].addRule('disallow', normalizedPath));
@@ -548,6 +543,7 @@
          */
         getGroup(userAgent) {
             if (!userAgent) return undefined;
+
             for (let index = 0; index < this.groups.length; index++) {
                 const group = this.groups[index];
 
@@ -555,6 +551,7 @@
                     return group;
                 }
             }
+
             return undefined;
         }
 
@@ -620,15 +617,18 @@
         normalizePath(path) {
             /** @type {string} */
             let decodedPath;
+
             try {
                 decodedPath = decodeURIComponent(path);
             } catch (error) {
                 decodedPath = path;
             }
-            /** @type {string} */
-            const newPath = decodedPath.replace(this.re.pathForwardSlash, '/');
-            if (newPath[0] === '/') return newPath;
-            return `/${newPath}`;
+
+            // Prepend forward slash if path not empty and does not start with
+            // forward slash
+            if (decodedPath && decodedPath[0] !== '/') return `/${decodedPath}`;
+
+            return decodedPath;
         }
 
         isValidTime(time) {
