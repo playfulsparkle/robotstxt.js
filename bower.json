@@ -1,7 +1,7 @@
 {
     "name": "robotstxt",
     "description": "A lightweight, Open Source robots.txt parser written in JavaScript",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "main": [
         "dist/robotstxt.min.js"
     ],

@@ -53,7 +53,7 @@
             try {
                 return new RegExp(`^${pattern}`);
             } catch (error) {
-                throw new SyntaxError(`Invalid path pattern "${path}" for regex creation: ${error.message}`)
+                throw new SyntaxError(`Invalid path pattern "${path}" for regex creation: ${error.message}`);
             }
         }
     }
