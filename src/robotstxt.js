@@ -41,11 +41,20 @@
          * @return {RegExp} - Regular expression for path matching
          */
         createRegex(path) {
-            const pattern = path
-                .replace(this.re.specialChars, '\\$&')      // Escape regex special characters
-                .replace(this.re.nonGreedyWildcard, '.*?'); // Replace * with non-greedy wildcard
+            let pattern = path
+                .replace(this.re.specialChars, '\\$&')
+                .replace(this.re.nonGreedyWildcard, '.*?');
 
-            return new RegExp(`^${pattern}`);
+            // Handle end-of-string matching if $ is at the end
+            if (pattern.slice(-1) === '\\$') {
+                pattern = `${pattern.slice(0, -2)}$`;
+            }
+
+            try {
+                return new RegExp(`^${pattern}`);
+            } catch (error) {
+                throw new SyntaxError(`Invalid path pattern "${path}" for regex creation: ${error.message}`)
+            }
         }
     }
 
@@ -295,7 +304,7 @@
 
                     const uaName = needsDefaultUa ? '*' : currentLine.value;
 
-                    if (!userAgentList.indexOf(uaName) !== -1) {
+                    if (userAgentList.indexOf(uaName) === -1) {
                         userAgentList.push(uaName);
                     }
 
@@ -466,8 +475,10 @@
 
             /** @type {Rule[]} */
             const rules = this.getApplicableRules(userAgent);
+
             /** @type {string} */
             const urlPath = this.normalizeUrlPath(url);
+
             /** @type {Rule[]} */
             const matchingRules = [];
 
@@ -479,17 +490,26 @@
 
             if (matchingRules.length === 0) return true;
 
-            /** @type {Rule} */
-            let mostSpecific = matchingRules[0];
+            // Special case for empty Disallow rule
+            const emptyDisallowRule = rules.find(r => r.type === 'disallow' && r.path === '');
+            if (emptyDisallowRule) {
+                // Empty Disallow means "allow all"
+                return true;
+            }
 
-            // Find most specific rule based on path length and special characters
+            // Find most specific rule
+            let mostSpecific = matchingRules[0];
             for (const rule of matchingRules) {
-                /** @type {number} */
                 const currentSpecificity = this.getRuleSpecificity(rule.path);
-                /** @type {number} */
                 const mostSpecificSpecificity = this.getRuleSpecificity(mostSpecific.path);
 
                 if (currentSpecificity > mostSpecificSpecificity) {
+                    mostSpecific = rule;
+                }
+                // If equal specificity but this is an Allow (and current most specific is Disallow)
+                else if (currentSpecificity === mostSpecificSpecificity &&
+                    rule.type === 'allow' && mostSpecific.type === 'disallow') {
+                    // Prefer Allow rule (least restrictive) in case of equal specificity
                     mostSpecific = rule;
                 }
             }
@@ -533,7 +553,7 @@
          *                        - undefined if no Host directive declared
          */
         getHost() {
-            return this.host = undefined;
+            return this.host;
         }
 
         /**

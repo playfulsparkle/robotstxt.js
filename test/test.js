@@ -409,11 +409,18 @@ describe('Check rules match', () => {
         }
 
         createRegex(path) {
-            const pattern = path
-                .replace(this.re.specialChars, '\\$&')
-                .replace(this.re.nonGreedyWildcard, '.*?');
+            try {
+                let pattern = path.replace(this.re.specialChars, '\\$&')
+                    .replace(this.re.nonGreedyWildcard, '.*?');
 
-            return new RegExp(`^${pattern}`);
+                if (pattern.slice(-1) === '\\$') {
+                    pattern = `${pattern.slice(0, -2)}$`;
+                }
+
+                return new RegExp(`^${pattern}`);
+            } catch (error) {
+                return new RegExp(`^${path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
+            }
         }
     }
 
