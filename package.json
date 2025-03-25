@@ -21,6 +21,10 @@
     ],
     "license": "BSD-3-Clause",
     "readmeFilename": "README.md",
+    "bugs": {
+      "url": "https://github.com/playfulsparkle/robotstxt.js/issues"
+    },
+    "homepage": "https://github.com/playfulsparkle/robotstxt.js#readme",
     "devDependencies": {
         "benchmark": "^2.1.4",
         "eslint": "^5.10.0",
