@@ -1,5 +1,6 @@
 {
     "name": "@playfulsparkle/robotstxt-js",
+    "type": "commonjs",
     "version": "1.0.9",
     "description": "A lightweight, Open Source robots.txt parser written in JavaScript",
     "author": "Zsolt Oroszlány <hello@playfulsparkle.com>",

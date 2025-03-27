@@ -1,6 +1,6 @@
 # robotstxt.js
 
-**robotstxt.js** is a lightweight, compliant JavaScript parser for **robots.txt** files, working in both browsers and Node.js environments.
+**robotstxt.js** is a **lightweight JavaScript library** for **parsing robots.txt files**. It provides a **compliant** solution in both **browser** and **Node.js** environments.
 
 # Directives
 
@@ -18,14 +18,22 @@
   - Robot-version
   - Visit-time
 
+## Benefits
+
+- Accurately parse and interpret `robots.txt` rules.
+- Ensure compliance with **robots.txt standards** to avoid accidental blocking of legitimate bots.
+- Easily check URL permissions for different **user agents** programmatically.
+- Simplify the process of working with `robots.txt` in **JavaScript applications**.
+
 ## Usage
+
+Here's how to use `robotstxt.js` to **analyze robots.txt content** and check **crawler permissions**.
 
 ### Node.js
 
 ```javascript
 const { robotstxt } = require("@playfulsparkle/robotstxt-js")
 ...
-```
 
 ### JavaScript
 
@@ -42,7 +50,7 @@ Sitemap: https://example.com/sitemap.xml
 const parser = robotstxt(robotsTxtContent);
 
 // Check URL permissions
-console.log(parser.isAllowed("/public/data", "GoogleBot"));  // true
+console.log(parser.isAllowed("/public/data", "GoogleBot"));   // true
 console.log(parser.isDisallowed("/private/admin", "GoogleBot")); // true
 
 // Get specific user agent group
@@ -103,7 +111,7 @@ bower install playfulsparkle/robotstxt.js
 - `getRules(): Rule[]` - All rules (allow/disallow/noindex) for this group.
 - `addRule(type: string, path: string): void` - Add rule (throws if type missing, throws if path missing).
 
-## Specification Support
+# Specification Support
 
 ### Full Support
 * User-agent groups and inheritance
@@ -117,7 +125,7 @@ bower install playfulsparkle/robotstxt.js
 * Multiple user-agent declarations
 * Rule precedence by specificity
 
-## Support
+# Support
 
 ### Node.js
 
