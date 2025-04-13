@@ -76,6 +76,14 @@ console.log(parser.isAllowed("/protected", "*")); // true (if no wildcard rules 
 npm i @playfulsparkle/robotstxt-js
 ```
 
+### Yarn
+
+```bash
+yarn add @playfulsparkle/robotstxt-js
+```
+
+### Bower (deprecated)
+
 ### Bower
 ```bash
 bower install playfulsparkle/robotstxt.js

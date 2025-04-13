@@ -1,4 +1,4 @@
-/*! @playfulsparkle/robotstxt-js v1.0.9 | Copyright (c) 2025-present, Zsolt Oroszlány <hello@playfulsparkle.com> | BSD-3-Clause */
+/*! @playfulsparkle/robotstxt-js v1.0.10 | Copyright (c) 2025-present, Zsolt Oroszlány <hello@playfulsparkle.com> | BSD-3-Clause */
 /* global window, exports, define */
 
 !function () {
