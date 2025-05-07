@@ -1,0 +1,80 @@
+name: 🐞 Bug Report
+description: Create a report to help us improve robotstxt.js
+title: "Bug Report Title"
+labels: []
+assignees:
+  - zsoltoroszlany82
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the details below to help us understand and fix the issue.
+
+  - type: textarea
+    attributes:
+      label: Describe the Bug
+      description: A clear and concise description of what the bug is.
+      placeholder: e.g. The parser incorrectly identifies a URL as disallowed.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Steps to Reproduce
+      description: List the steps to reproduce the behavior.
+      placeholder: |
+        1. Create a robots.txt string: `User-Agent: *\nDisallow: /private`
+        2. Parse the string using `robotstxt(...)`
+        3. Check if `/private` is disallowed using `isDisallowed('/private', '*')`
+        4. Observe unexpected behavior (e.g., returns false instead of true)
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Expected Behavior
+      description: A clear and concise description of what you expected to happen.
+      placeholder: The `isDisallowed` method should return `true` for the given path and user agent.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Relevant robots.txt content
+      description: Paste the `robots.txt` content that is causing the issue.
+      render: plain
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Error Logs or Messages
+      description: If applicable, paste any relevant error logs or messages.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Screenshots or Video
+      description: If available, add screenshots or a video to help explain your problem.
+    validations:
+      required: false
+
+  - type: input
+    attributes:
+      label: robotstxt.js Version
+      description: What version of the library are you using?
+      placeholder: e.g. 1.2.3
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Environment Details
+      description: Specify the environment where the bug occurs (Node.js or Browser). Include versions of Node.js, browser, and operating system.
+      placeholder: |
+        - Node.js version: v18.12.0
+        - Browser: Chrome 108, Firefox 105, Safari 16
+        - Operating System: macOS Ventura 13.0, Windows 11, Ubuntu 22.04
+    validations:
+      required: true
